@@ -1,14 +1,10 @@
 import { logger } from "#utils/logger";
-import { EventUtils } from "../utils/EventUtils.js";
+import { EventUtils } from "#utils/EventUtils";
 
-export default class TrackStuck {
-  constructor(musicManager, client) {
-    this.musicManager   =musicManager;
-    this.client   =client;
-    this.lavalink   =musicManager.lavalink;
-  }
-
-  async execute(player, track, payload) {
+export default {
+  name: "trackStuck",
+  once: false,
+  async execute(player, track, payload, musicManager, client) {
     try {
       logger.warn('TrackStuck', `Track stuck for ${payload.thresholdMs}ms in guild ${player.guildId}:`, {
         track: track?.info?.title || 'Unknown',
@@ -16,13 +12,13 @@ export default class TrackStuck {
         guildId: player.guildId
       });
 
-      const messageId   =player.get('nowPlayingMessageId');
-      const channelId   =player.get('nowPlayingChannelId');
+      const messageId = player.get('nowPlayingMessageId');
+      const channelId = player.get('nowPlayingChannelId');
 
       if (messageId && channelId) {
         try {
-          const channel   =this.client.channels.cache.get(channelId);
-          const message   =await channel?.messages.fetch(messageId).catch(()   => null);
+          const channel = client.channels.cache.get(channelId);
+          const message = await channel?.messages.fetch(messageId).catch(() => null);
 
           if (message) {
             await message.edit({
@@ -35,7 +31,7 @@ export default class TrackStuck {
         }
       }
 
-      const warningMessage   =await EventUtils.sendPlayerMessage(this.client, player, {
+      const warningMessage = await EventUtils.sendPlayerMessage(client, player, {
         content: `⚠️ **Audio playback is experiencing issues.** Attempting to recover automatically...`
       });
 
@@ -43,18 +39,18 @@ export default class TrackStuck {
         player.set('stuckWarningMessageId', warningMessage.id);
       }
 
-      const stuckTimeoutId   =setTimeout(async ()   => {
+      const stuckTimeoutId = setTimeout(async () => {
         try {
-          if (player.queue.current && player.queue.current.info.identifier   ===track?.info?.identifier) {
+          if (player.queue.current && player.queue.current.info.identifier === track?.info?.identifier) {
             logger.info('TrackStuck', `Auto-skipping stuck track: ${track?.info?.title}`);
 
-            const warningMsgId   =player.get('stuckWarningMessageId');
+            const warningMsgId = player.get('stuckWarningMessageId');
             if (warningMsgId) {
               try {
-                const channel   =this.client.channels.cache.get(player.textChannelId);
-                const warningMsg   =await channel?.messages.fetch(warningMsgId).catch(()   => null);
+                const channel = client.channels.cache.get(player.textChannelId);
+                const warningMsg = await channel?.messages.fetch(warningMsgId).catch(() => null);
                 if (warningMsg) {
-                  await warningMsg.delete().catch(()   => {});
+                  await warningMsg.delete().catch(() => {});
                 }
                 player.set('stuckWarningMessageId', null);
               } catch (cleanupError) {
@@ -75,4 +71,4 @@ export default class TrackStuck {
       logger.error('TrackStuck', 'Error in trackStuck event:', error);
     }
   }
-}
+};

@@ -9,9 +9,9 @@ export const config = {
   nodes: [
     {
       id: "main-node",
-      host: "79.110.236.32",
-      port: 9067,
-      authorization: "youshallnotpass",
+      host: process.env.lavahost,
+      port: 2002,
+      authorization: process.env.passlink,
       secure: false,
       retryAmount: 5,
       retryDelay: 3000,

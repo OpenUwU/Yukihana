@@ -147,21 +147,4 @@ export class CommandHandler {
                 return Array.from(this.slashCommands.values());
         }
 
-        async reloadAllCommands() {
-                logger.info("CommandHandler", "Reloading all commands...");
-                try {
-                        await this.loadCommands();
-                        return {
-                                success: true,
-                                message: `Reloaded ${this.commands.size} prefix and ${this.slashCommandFiles.size} slash commands.`,
-                        };
-                } catch (error) {
-                        logger.error(
-                                "CommandHandler",
-                                "A critical error occurred while reloading commands.",
-                                error,
-                        );
-                        return { success: false, message: "Failed to reload commands." };
-                }
         }
-}

@@ -30,7 +30,10 @@ async function _sendError(interaction, title, description) {
     .addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     )
-    .addTextDisplayComponents(new TextDisplayBuilder().setContent(description));
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(description))
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    );
 
   const reply = {
     components: [container],
@@ -162,7 +165,7 @@ async function handleChatInputCommand(interaction, client) {
       return _sendError(
         interaction,
         "Insufficient Permissions",
-        `You do not have the required permissions to use this command,` 
+        "You do not have the required permissions to use this command.",
       );
     }
 
@@ -267,7 +270,7 @@ async function handleChatInputCommand(interaction, client) {
     await _sendError(
       interaction,
       "Command Error",
-      `An unexpected error occurred while running the command.`,
+      "An unexpected error occurred while running the command.",
     );
   }
 }

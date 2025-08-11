@@ -1,5 +1,5 @@
 import { logger } from "#utils/logger"
-import client from "#../../index.js"
+import client from "../../../index.js"
 export default {
 	name: "raw",
 	once: false,

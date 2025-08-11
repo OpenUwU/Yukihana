@@ -19,7 +19,7 @@ class TeamInfoCommand extends Command {
       name: "teaminfo",
       description: "Shows information about the development team",
       usage: "teaminfo",
-      aliases: ["dev team papa", "devteam", "team"],
+      aliases: ["dev","papa", "devteam", "team"],
       category: "info",
       examples: [
         "teaminfo",

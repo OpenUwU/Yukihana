@@ -32,6 +32,13 @@ export const config = {
     status: process.env.STATUS_TYPE || 'dnd',
     type: 'CUSTOM'
   },
+  colors: {
+    info: '#3498db',
+    success: '#2ecc71',
+    warning: '#f39c12',
+    error: '#e74c3c'
+  },
+  
   webhook: {
     enabled: process.env.WEBHOOK_ENABLED !== 'false',
     url: process.env.WEBHOOK_URL || null,

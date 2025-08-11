@@ -20,9 +20,9 @@ export const config = {
   environment: process.env.NODE_ENV || 'development',
   debug: process.env.DEBUG === 'true' || process.env.NODE_ENV === 'development',
   database: {
-    guild: './database/guild.db',
-    user: './database/user.db',
-    premium: './database/premium.db',
+    guild: './database/data/guild.db',
+    user: './database/data/user.db',
+    premium: './database/data/premium.db',
   },
   links: {
     supportServer: "https://google.com"
@@ -39,8 +39,6 @@ export const config = {
     error: '#e74c3c'
   },
   channels: {
-    error: process.env.ERROR_CHANNEL_ID || '1397608041280704603',
-    logs: process.env.LOG_CHANNEL_ID || '1397608041280704603',
     backup: process.env.BACKUP_CHANNEL_ID || '1397608041280704603'
   },
   webhook: {
@@ -67,8 +65,7 @@ export const config = {
     }
   },
   features: {
-    backup: process.env.BACKUP_ENABLED !== 'false',
-    stay247: process.env.STAY_247_ENABLED !== 'false'
+    stay247: true
   },
   queue: {
     maxSongs: {

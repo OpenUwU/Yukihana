@@ -1,9 +1,11 @@
+import { logger } from "#utils/logger"
+import client from "#../../index.js"
 export default {
 	name: "raw",
 	once: false,
-	async execute(data, client) {
+	async execute(data) {
 		try {
-			this.lavalink.sendRawData(data);
+			client.lavalink.sendRawData(data);
 		} catch (error) {
 			logger.error("LavalinkClient", "Error in raw event handler:", error);
 		}

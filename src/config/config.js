@@ -20,9 +20,9 @@ export const config = {
   environment: process.env.NODE_ENV || 'development',
   debug: process.env.DEBUG === 'true' || process.env.NODE_ENV === 'development',
   database: {
-    guild: './database/data/guild.db',
-    user: './database/data/user.db',
-    premium: './database/data/premium.db',
+    guild: './database/data/guild.bread',
+    user: './database/data/user.bread',
+    premium: './database/data/premium.bread',
   },
   links: {
     supportServer: "https://google.com"
@@ -31,15 +31,6 @@ export const config = {
     text: process.env.STATUS_TEXT || '!help | Discord Bot',
     status: process.env.STATUS_TYPE || 'dnd',
     type: 'CUSTOM'
-  },
-  colors: {
-    info: '#3498db',
-    success: '#2ecc71',
-    warning: '#f39c12',
-    error: '#e74c3c'
-  },
-  channels: {
-    backup: process.env.BACKUP_CHANNEL_ID || '1397608041280704603'
   },
   webhook: {
     enabled: process.env.WEBHOOK_ENABLED !== 'false',

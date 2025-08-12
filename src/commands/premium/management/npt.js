@@ -1,526 +1,216 @@
 import { Command } from "#structures/classes/Command";
-import { ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, ActionRowBuilder, ButtonBuilder, SelectMenuBuilder, SelectMenuOptionBuilder, MessageFlags, SeparatorSpacingSize, ButtonStyle } from "discord.js";
+import {
+  ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, ActionRowBuilder,
+  ButtonBuilder, StringSelectMenuBuilder, MessageFlags, SeparatorSpacingSize,
+  ButtonStyle, ThumbnailBuilder, SectionBuilder
+} from "discord.js";
 import { db } from "#database/DatabaseManager";
 import { logger } from "#utils/logger";
+import emoji from "#config/emoji";
+import { config } from "#config/config";
 
 class NoPrefixToggleCommand extends Command {
   constructor() {
     super({
       name: "noptoggle",
-      description: "Toggle your personal no-prefix mode for seamless command usage (Premium Only)",
+      description: "Toggle your personal no-prefix mode (Premium Only).",
       usage: "noptoggle [on/off]",
       aliases: ["npt", "noprefixtoggle", "noprefix", "nop"],
       category: "settings",
-      examples: [
-        "noptoggle",
-        "noptoggle on",
-        "npt off",
-        "noprefix"
-      ],
+      examples: ["noptoggle", "noptoggle on", "npt off"],
       cooldown: 5,
       userPrem: true,
       enabledSlash: true,
       slashData: {
-        name: ["premium", "noptoggle"],
-        description: "Toggle your personal no-prefix mode (Premium Only)",
-        options: [
-          {
-            name: "action",
-            description: "Enable or disable no-prefix mode",
-            type: 3,
-            required: false,
-            autocomplete: true,
-          },
-        ],
+        name: "noptoggle",
+        description: "Toggle your personal no-prefix mode (Premium Only).",
+        options: [{
+          name: "action",
+          description: "Enable or disable no-prefix mode.",
+          type: 3,
+          required: false,
+          autocomplete: true,
+        }],
       },
     });
   }
 
-  _createSeparator(spacing   =SeparatorSpacingSize.Small, divider   =false) {
-    return new SeparatorBuilder().setSpacing(spacing).setDivider(divider);
-  }
-
-  buildNoPrefixContainer(
-    client,
-    userId,
-    username,
-    currentStatus,
-    action   =null
-  ) {
-    const container   =new ContainerBuilder().setAccentColor(
-      currentStatus ? 0x57f287 : 0xed4245
-    );
+  _createUIContainer(username, currentStatus, action = null) {
+    const container = new ContainerBuilder();
+    const statusText = currentStatus ? "Enabled" : "Disabled";
+    const statusEmoji = currentStatus ? emoji.get('check') : emoji.get('cross');
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        `### No-Prefix Mode Toggle\n*Premium Feature - Personal Configuration*\n\nHello **${username}**!`
-      )
+      new TextDisplayBuilder().setContent(`### ${emoji.get('info')} No-Prefix Mode`)
     );
+    container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
-    container.addSeparatorComponents(
-      this._createSeparator(SeparatorSpacingSize.Small, true)
-    );
-
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent("## Current Status")
-    );
-
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        `**No-Prefix Mode**: ${currentStatus ? "**Enabled**" : "**Disabled**"
-       }\n**User**: ${username}\n**Premium**: Active`
-      )
-    );
-
-
+    let content = `Hello **${username}**! Your personal No-Prefix mode is currently **${statusText}** ${statusEmoji}.\n\n`;
     if (action) {
-      container.addSeparatorComponents(this._createSeparator());
-
-      container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent("## Action Result")
-      );
-
-      container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-          `**Your no-prefix mode has been ${action}!**`
-        )
-      );
+      content += `**Action Result:** Your no-prefix mode has been **${action}**!\n\n`;
     }
-
-    container.addSeparatorComponents(
-      this._createSeparator(SeparatorSpacingSize.Large, true)
-    );
-
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent("## How No-Prefix Mode Works")
-    );
 
     if (currentStatus) {
-      container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent("**Mode: ENABLED**")
-      );
-
-      container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-          `**You can now use commands without any prefix**\n• Just type command names directly\n• Example: \`ping\` or \`help\`\n• Works in all servers where ${client.user.username} is present\n• Premium perk - no expiration`
-        )
-      );
+      content += `**How it works:** You can now use commands without any prefix (e.g., \`ping\`). This setting follows you across all servers where I am present.`;
     } else {
-      container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent("**Mode: DISABLED**")
-      );
-
-      container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-          `🔧 **You need to use prefixes for commands**\n• Use server prefix or mention the bot\n• Example: \`!ping\` or \`@${client.user.username} help\`\n• Standard Discord bot behavior`
-        )
-      );
+      content += `**How it works:** You need to use a server's prefix or mention me to run commands (e.g., \`!ping\` or \`@Yukihana help\`).`;
     }
 
-    container.addSeparatorComponents(
-      this._createSeparator(SeparatorSpacingSize.Large, true)
-    );
+    const section = new SectionBuilder()
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail))
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+    container.addSectionComponents(section);
 
-    container.addActionRowComponents(
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId("npt_toggle")
-          .setLabel(currentStatus ? "Disable No-Prefix" : "Enable No-Prefix")
-          .setStyle(currentStatus ? ButtonStyle.Danger : ButtonStyle.Success),
-        new ButtonBuilder()
-          .setCustomId("npt_help")
-          .setLabel("Help & Info")
-          .setStyle(ButtonStyle.Secondary)
-      )
-    );
+    container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
-    container.addActionRowComponents(
-      new ActionRowBuilder().addComponents(
-        new SelectMenuBuilder()
-          .setCustomId("npt_advanced")
-          .setPlaceholder("Advanced options...")
-          .addOptions(
-            new SelectMenuOptionBuilder()
-              .setLabel("View Usage Examples")
-              .setValue("examples")
-              .setDescription("See examples of how to use commands"),
-            new SelectMenuOptionBuilder()
-              .setLabel("Check Premium Status")
-              .setValue("premium")
-              .setDescription("View your premium subscription details"),
-            new SelectMenuOptionBuilder()
-              .setLabel("Reset to Default")
-              .setValue("reset")
-              .setDescription("Reset to server default settings")
-          )
-      )
+    const buttons = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+      .setCustomId("npt_toggle")
+      .setLabel(currentStatus ? "Disable No-Prefix" : "Enable No-Prefix")
+      .setStyle(currentStatus ? ButtonStyle.Danger : ButtonStyle.Success),
+      new ButtonBuilder()
+      .setCustomId("npt_help")
+      .setLabel("Help & Info")
+      .setStyle(ButtonStyle.Secondary)
     );
-
-    container.addSeparatorComponents(
-      this._createSeparator(SeparatorSpacingSize.Small, true)
-    );
-
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        `*User ID: ${userId} • Premium Feature • Session: ${new Date().toLocaleString()}*`
-      )
-    );
-
+    container.addActionRowComponents(buttons);
     return container;
   }
 
-  buildHelpContainer(client, username) {
-    if (!client) logger.warn("NoPrefixToggle", "Client is undefined [NPT buildHelpContainer]");
-    if (!username)
-      logger.warn("NoPrefixToggle", "Username is undefined [NPT buildHelpContainer]");
+  _createHelpContainer() {
+    const container = new ContainerBuilder();
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(`### ${emoji.get('info')} No-Prefix Help`));
+    container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
-    const container   =new ContainerBuilder().setAccentColor(0x5865f2);
+    const content = `**What is No-Prefix Mode?**\nIt allows premium users to use bot commands without typing a prefix. Instead of \`!ping\`, you can just type \`ping\`.\n\n` +
+      `**This is a personal setting** that follows you across all servers and can be toggled at any time.`;
 
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        `# 📚 No-Prefix Mode Help\n*Everything you need to know*`
-      )
-    );
+    const section = new SectionBuilder()
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail))
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+    container.addSectionComponents(section);
 
-    container.addSeparatorComponents(
-      this._createSeparator(SeparatorSpacingSize.Small, true)
-    );
-
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent("## What is No-Prefix Mode?")
-    );
-
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        "No-Prefix Mode allows premium users to use bot commands without typing a prefix. Instead of `!ping`, you can just type `ping`."
-      )
-    );
-
-    container.addSeparatorComponents(this._createSeparator());
-
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent("## Examples")
-    );
-
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        "**With No-Prefix Mode:**\n• `ping`\n• `help`\n• `prefix`\n\n**Without No-Prefix Mode:**\n• `!ping`\n• `!help`\n• `!prefix`"
-      )
-    );
-
-    container.addSeparatorComponents(this._createSeparator());
-
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent("## Premium Feature")
-    );
-
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        "**User Premium Required**\n• Personal setting that follows you\n• Works in all servers\n• No expiration\n• Toggle anytime"
-      )
-    );
-
-    container.addActionRowComponents(
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId("npt_back")
-          .setLabel("← Back to Settings")
-          .setStyle(ButtonStyle.Secondary)
-      )
-    );
-
+    container.addActionRowComponents(new ActionRowBuilder().addComponents(
+      new ButtonBuilder().setCustomId("npt_back").setLabel("Back to Settings").setStyle(ButtonStyle.Secondary)
+    ));
     return container;
   }
 
-  buildExamplesContainer() {
-    const container   =new ContainerBuilder().setAccentColor(0xfee75c);
+  async _sendError(ctx, message) {
+    const container = new ContainerBuilder();
+    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(`### ${emoji.get('cross')} Error`));
+    container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
-    container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        "# 💡 Usage Examples\n*See how commands work with and without prefixes*"
-      )
-    );
+    const section = new SectionBuilder()
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail))
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(message));
+    container.addSectionComponents(section);
 
-    container.addSeparatorComponents(
-      this._createSeparator(SeparatorSpacingSize.Small, true)
-    );
-
-    const examples   =[
-      { category: "Bot Commands", with: "ping", without: "!ping" },
-      {
-        category: "Moderation",
-        with: "ban @user spam",
-        without: "!ban @user spam",
-      },
-      { category: "Utility", with: "help", without: "!help" },
-      { category: "Settings", with: "prefix", without: "!prefix" },
-    ];
-
-    examples.forEach((example, index)   => {
-      container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`**${example.category}**`)
-      );
-
-      container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-          `**With No-Prefix**: \`${example.with}\`\n**Without**: \`${example.without}\``
-        )
-      );
-
-      if (index < examples.length - 1) {
-        container.addSeparatorComponents(this._createSeparator());
-      }
-    });
-
-    container.addActionRowComponents(
-      new ActionRowBuilder().addComponents(
-        new ButtonBuilder()
-          .setCustomId("npt_back")
-          .setLabel("← Back to Settings")
-          .setStyle(ButtonStyle.Secondary)
-      )
-    );
-
-    return container;
-  }
-
-  async execute({ message, args, client }) {
-    const userId   =message.author.id;
-    const username   =message.author.username;
-    const currentStatus   =db.hasNoPrefix(userId);
-
-    let newStatus;
-    let action;
-
-    if (args.length > 0) {
-      const arg   =args[0].toLowerCase();
-      if (arg   ==="on" || arg   ==="enable" || arg   ==="true") {
-        newStatus   =true;
-        action   ="enabled";
-      } else if (arg   ==="off" || arg   ==="disable" || arg   ==="false") {
-        newStatus   =false;
-        action   ="disabled";
-      } else {
-        const errorContainer   =new ContainerBuilder()
-          .setAccentColor(0xed4245);
-
-        errorContainer.addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `###  Invalid Option\n*Please use valid options*`
-          )
-        );
-
-        errorContainer.addSeparatorComponents(
-          this._createSeparator(SeparatorSpacingSize.Small, true)
-        );
-
-        errorContainer.addTextDisplayComponents(
-          new TextDisplayBuilder().setContent("## Error Details")
-        );
-
-        errorContainer.addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            `**Invalid option**: \`${arg}\`\n\n**Valid options:**\n• \`on\` / \`enable\` - Enable no-prefix mode\n• \`off\` / \`disable\` - Disable no-prefix mode\n• No argument - Toggle current state`
-          )
-        );
-
-        errorContainer.addActionRowComponents(
-          new ActionRowBuilder().addComponents(
-            new ButtonBuilder()
-              .setCustomId("npt_back")
-              .setLabel("← Back to Settings")
-              .setStyle(ButtonStyle.Secondary)
-          )
-        );
-
-        const sent   =await message.reply({
-          components: [errorContainer],
-          flags: MessageFlags.IsComponentsV2,
-        });
-
-        const collector   =sent.createMessageComponentCollector({ time: 60000 });
-        collector.on("collect", async (interaction)   => {
-          if (interaction.user.id   !==message.author.id) {
-            return interaction.reply({
-              content: "This is not your command!",
-              ephemeral: true,
-            });
-          }
-
-          if (interaction.customId   ==="npt_back") {
-            await interaction.deferUpdate();
-            const mainContainer   =this.buildNoPrefixContainer(
-              client,
-              userId,
-              username,
-              currentStatus
-            );
-            await interaction.editReply({
-              components: [mainContainer],
-              flags: MessageFlags.IsComponentsV2,
-            });
-          }
-        });
-        return;
-      }
-    } else {
-      newStatus   =!currentStatus;
-      action   =newStatus ? "enabled" : "disabled";
-    }
-
-    db.setNoPrefix(userId, newStatus, null);
-
-    const container   =this.buildNoPrefixContainer(
-      client,
-      userId,
-      username,
-      newStatus,
-      action
-    );
-
-    const sent   =await message.reply({
+    await ctx.reply({
       components: [container],
       flags: MessageFlags.IsComponentsV2,
-    });
-
-    const collector   =sent.createMessageComponentCollector({ time: 300000 });
-
-    collector.on("collect", async (interaction)   => {
-      if (interaction.user.id   !==message.author.id) {
-        return interaction.reply({
-          content: "This is not your command!",
-          ephemeral: true,
-        });
-      }
-
-      try {
-        await interaction.deferUpdate();
-        const customId   =interaction.customId;
-
-        if (customId   ==="npt_toggle") {
-          const currentStatus   =db.hasNoPrefix(userId);
-          const newStatus   =!currentStatus;
-          const action   =newStatus ? "enabled" : "disabled";
-
-          db.setNoPrefix(userId, newStatus, null);
-
-          const updatedContainer   =this.buildNoPrefixContainer(
-            client,
-            userId,
-            username,
-            newStatus,
-            action
-          );
-          await interaction.editReply({
-            components: [updatedContainer],
-            flags: MessageFlags.IsComponentsV2,
-          });
-        } else if (customId   ==="npt_help") {
-          const helpContainer   =this.buildHelpContainer(client, username);
-          await interaction.editReply({
-            components: [helpContainer],
-            flags: MessageFlags.IsComponentsV2,
-          });
-        } else if (customId   ==="npt_back") {
-          const currentStatus   =db.hasNoPrefix(userId);
-          const mainContainer   =this.buildNoPrefixContainer(
-            client,
-            userId,
-            username,
-            currentStatus
-          );
-          await interaction.editReply({
-            components: [mainContainer],
-            flags: MessageFlags.IsComponentsV2,
-          });
-        } else if (customId   ==="npt_advanced") {
-          const value   =interaction.values[0];
-
-          if (value   ==="examples") {
-            const examplesContainer   =this.buildExamplesContainer();
-            await interaction.editReply({
-              components: [examplesContainer],
-              flags: MessageFlags.IsComponentsV2,
-            });
-          } else if (value   ==="premium") {
-            await interaction.followUp({
-              content:
-                "**Premium Status**: Active\n✅ User Premium subscription detected\n🔄 No-Prefix Mode: Available\n📅 Valid until: No expiration",
-              ephemeral: true,
-            });
-          } else if (value   ==="reset") {
-            db.setNoPrefix(userId, false, null);
-            const resetContainer   =this.buildNoPrefixContainer(
-              client,
-              userId,
-              username,
-              false,
-              "reset to default"
-            );
-            await interaction.editReply({
-              components: [resetContainer],
-              flags: MessageFlags.IsComponentsV2,
-            });
-          }
-        }
-      } catch (error) {
-        logger.error("NoPrefixToggle", "NPT Interaction Error:", error);
-        await interaction.followUp({
-          content: "An error occurred while processing your request.",
-          ephemeral: true,
-        });
-      }
-    });
-
-    collector.on("end", async ()   => {
-      const expiredContainer   =new ContainerBuilder()
-        .setAccentColor(0x747f8d);
-
-      expiredContainer.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-          "###  No-Prefix Mode Toggle\n*This command interface has expired.*\n\nRun the command again to access your settings."
-        )
-      );
-
-      try {
-        await sent.edit({
-          components: [expiredContainer],
-          flags: MessageFlags.IsComponentsV2,
-        });
-      } catch (e) {
-        client.logger.error("Collector End Error: [NPT]", e);
-      }
+      ephemeral: true,
     });
   }
 
-  async slashExecute({ interaction, client }) {
-    const action   =interaction.options.getString("action");
-    await this.execute({
-      client,
-      message: interaction,
-      args: action ? [action] : [],
+  async _handleCommand(ctx, arg) {
+    const isInteraction = !!ctx.user;
+    const author = isInteraction ? ctx.user : ctx.author;
+    const userId = author.id;
+    const username = author.username;
+    const currentStatus = db.hasNoPrefix(userId);
+
+    let newStatus = currentStatus;
+    let action = null;
+
+    if (arg) {
+      const lowerArg = arg.toLowerCase();
+      if (["on", "enable", "true"].includes(lowerArg)) {
+        newStatus = true;
+        action = "enabled";
+      } else if (["off", "disable", "false"].includes(lowerArg)) {
+        newStatus = false;
+        action = "disabled";
+      } else {
+        return this._sendError(ctx, `**Invalid option:** \`${arg}\`\n\n**Valid options:** \`on\` or \`off\`.`);
+      }
+      db.setNoPrefix(userId, newStatus, null);
+    }
+
+    const container = this._createUIContainer(username, newStatus, action);
+    const replyOptions = { components: [container], flags: MessageFlags.IsComponentsV2, fetchReply: true };
+    const sent = await (isInteraction ? ctx.reply(replyOptions) : ctx.channel.send(replyOptions));
+    this._setupCollector(sent, author);
+  }
+
+  async execute({ message, args }) {
+    await this._handleCommand(message, args[0]);
+  }
+
+  async slashExecute({ interaction }) {
+    await this._handleCommand(interaction, interaction.options.getString("action"));
+  }
+
+  _setupCollector(message, author) {
+    const collector = message.createMessageComponentCollector({
+      filter: (i) => i.user.id === author.id,
+      time: 300_000
+    });
+
+    collector.on("collect", async (interaction) => {
+      try {
+        await interaction.deferUpdate();
+        const userId = interaction.user.id;
+        const username = interaction.user.username;
+
+        if (interaction.customId === "npt_toggle") {
+          const currentStatus = db.hasNoPrefix(userId);
+          const newStatus = !currentStatus;
+          db.setNoPrefix(userId, newStatus, null);
+          const updatedContainer = this._createUIContainer(username, newStatus, newStatus ? "enabled" : "disabled");
+          await interaction.editReply({ components: [updatedContainer] });
+        } else if (interaction.customId === "npt_help") {
+          await interaction.editReply({ components: [this._createHelpContainer()] });
+        } else if (interaction.customId === "npt_back") {
+          const currentStatus = db.hasNoPrefix(userId);
+          await interaction.editReply({ components: [this._createUIContainer(username, currentStatus)] });
+        }
+      } catch (error) {
+        logger.error("NoPrefixToggle", "Collector Error:", error);
+      }
+    });
+
+    collector.on("end", async () => {
+        try {
+            const fetchedMessage = await message.fetch().catch(() => null);
+            if (fetchedMessage?.components.length > 0) {
+                const disabledComponents = fetchedMessage.components.map(row => {
+                    const newRow = ActionRowBuilder.from(row);
+                    newRow.components.forEach(component => {
+                        if (component.data.style !== ButtonStyle.Link) {
+                            component.setDisabled(true);
+                        }
+                    });
+                    return newRow;
+                });
+                await fetchedMessage.edit({ components: disabledComponents });
+            }
+        } catch (error) {
+            if (error.code !== 10008) {
+                logger.error("NoPrefixToggle", "Failed to disable components on end:", error);
+            }
+        }
     });
   }
 
   async autocomplete({ interaction }) {
-    const focusedValue   =interaction.options.getFocused();
-    const choices   =[
+    const focusedValue = interaction.options.getFocused();
+    const choices = [
       { name: "Enable no-prefix mode", value: "on" },
       { name: "Disable no-prefix mode", value: "off" },
-      { name: "Toggle current state", value: "toggle" },
-      { name: "Enable (alternative)", value: "enable" },
-      { name: "Disable (alternative)", value: "disable" },
     ];
-
-    const filtered   =choices.filter(
-      (choice)   =>
-        choice.name.toLowerCase().includes(focusedValue.toLowerCase()) ||
-        choice.value.toLowerCase().includes(focusedValue.toLowerCase())
-    );
-
-    await interaction.respond(
-      filtered.map((choice)   => ({ name: choice.name, value: choice.value }))
-    );
+    const filtered = choices.filter(choice => choice.name.toLowerCase().includes(focusedValue.toLowerCase()));
+    await interaction.respond(filtered);
   }
 }
 

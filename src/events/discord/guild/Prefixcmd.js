@@ -5,10 +5,14 @@ import {
   ButtonBuilder,
   ButtonStyle,
   MessageFlags,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  SectionBuilder,
 } from "discord.js";
 import { logger } from "#utils/logger";
 import { db } from "#database/DatabaseManager";
 import { cooldownManager } from "#utils/cooldownManager";
+import emoji from "#config/emoji";
 import {
   canUseCommand,
   getMissingBotPermissions,
@@ -18,16 +22,32 @@ import { config } from "#config/config";
 import { PlayerManager } from "#managers/PlayerManager";
 
 async function _sendError(message, title, description) {
+  const button = new ButtonBuilder()
+    .setLabel("Support")
+    .setURL(config.links.supportServer)
+    .setStyle(ButtonStyle.Link);
+
   const container = new ContainerBuilder()
-    .setAccentColor(0xed4245)
     .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`### ${title}\n*${description}*`),
+      new TextDisplayBuilder().setContent(`${emoji.get("cross")} **${title}**`),
+    )
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    )
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(description),
+        )
+        .setButtonAccessory(button),
     );
+
   const reply = {
     components: [container],
     flags: MessageFlags.IsComponentsV2,
     ephemeral: true,
   };
+
   try {
     if (message.replied || message.deferred) {
       await message.followUp(reply);
@@ -39,20 +59,30 @@ async function _sendError(message, title, description) {
 
 async function _sendPremiumError(message, type) {
   const button = new ButtonBuilder()
-    .setLabel("Get Premium")
+    .setLabel("Support")
     .setURL(config.links.supportServer)
     .setStyle(ButtonStyle.Link);
-  const row = new ActionRowBuilder().addComponents(button);
+
   const typeText = type === "user" ? "User Premium" : "Guild Premium";
 
   const container = new ContainerBuilder()
-    .setAccentColor(0xfde047)
     .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `### ${typeText} Required\nThis command is an exclusive feature for our premium subscribers.`,
+        `${emoji.get("info")} **${typeText} Required**`,
       ),
     )
-    .addActionRowComponents(row);
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    )
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            "This command is an exclusive feature for our premium subscribers.",
+          ),
+        )
+        .setButtonAccessory(button),
+    );
 
   await message.reply({
     components: [container],
@@ -79,17 +109,30 @@ async function _handleExpiredUserPerks(userId, author) {
 
     if (perksRemoved.length > 0 && Math.random() < 0.3) {
       const button = new ButtonBuilder()
-        .setLabel("Renew Premium")
+        .setLabel("Support")
         .setURL(config.links.supportServer)
         .setStyle(ButtonStyle.Link);
+
       const container = new ContainerBuilder()
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(
-            "**User Premium Expired**\nYour subscription has ended. The following perks have been disabled:\n• " +
-              perksRemoved.join("\n• "),
+            `${emoji.get("info")} **User Premium Expired**`,
           ),
         )
-        .addActionRowComponents(new ActionRowBuilder().addComponents(button));
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+        )
+        .addSectionComponents(
+          new SectionBuilder()
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(
+                "Your subscription has ended. The following perks have been disabled:\n• " +
+                  perksRemoved.join("\n• "),
+              ),
+            )
+            .setButtonAccessory(button),
+        );
+
       try {
         await author.send({
           components: [container],
@@ -105,11 +148,31 @@ async function _handleExpiredGuildPerks(guildId, channel) {
   const prefixes = db.getPrefixes(guildId);
   if (prefixes.length > 1) {
     db.setPrefixes(guildId, [config.prefix]);
-    const container = new ContainerBuilder().addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        `**Server Premium Expired**\nThis server's premium has expired. Multiple prefixes have been disabled, and the prefix has been reset to: \`${config.prefix}\``,
-      ),
-    );
+
+    const button = new ButtonBuilder()
+      .setLabel("Support")
+      .setURL(config.links.supportServer)
+      .setStyle(ButtonStyle.Link);
+
+    const container = new ContainerBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `${emoji.get("info")} **Server Premium Expired**`,
+        ),
+      )
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+      )
+      .addSectionComponents(
+        new SectionBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              `This server's premium has expired. Multiple prefixes have been disabled, and the prefix has been reset to: \`${config.prefix}\``,
+            ),
+          )
+          .setButtonAccessory(button),
+      );
+
     try {
       await channel.send({
         components: [container],
@@ -168,16 +231,36 @@ export default {
     if (mentionRegex.test(message.content.trim())) {
       const guildPrefixes = db.getPrefixes(message.guild.id);
       const userPrefixes = db.getUserPrefixes(message.author.id);
-      let content = `**Hello, I'm ${client.user.username}**\nMy prefix in this server is: ${guildPrefixes.map((p) => `\`${p}\``).join(" ")}`;
+
+      const button = new ButtonBuilder()
+        .setLabel("Support")
+        .setURL(config.links.supportServer)
+        .setStyle(ButtonStyle.Link);
+
+      let content = `Hello! I'm **${client.user.username}**\n\nMy prefix in this server is: ${guildPrefixes.map((p) => `\`${p}\``).join(" ")}`;
       if (userPrefixes.length > 0)
         content += `\nYour personal prefixes are: ${userPrefixes.map((p) => `\`${p}\``).join(" ")}`;
-      content += `\nUse \`${guildPrefixes[0]}help\` for commands.`;
-      return message.reply({
-        components: [
-          new ContainerBuilder().addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(content),
+      content += `\n\nUse \`${guildPrefixes[0]}help\` for commands.`;
+
+      const container = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `${emoji.get("info")} **Bot Information**`,
           ),
-        ],
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+        )
+        .addSectionComponents(
+          new SectionBuilder()
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(content),
+            )
+            .setButtonAccessory(button),
+        );
+
+      return message.reply({
+        components: [container],
         flags: MessageFlags.IsComponentsV2,
       });
     }
@@ -215,7 +298,7 @@ export default {
         return _sendError(
           message,
           "Insufficient Permissions",
-        `You do not have the required permissions to use this command, you need: \`${command.userpermissions.join(", ")}`
+          `You do not have the required permissions to use this command, you need: \`${command.userpermissions.join(", ")}\``,
         );
       }
 
@@ -267,7 +350,7 @@ export default {
           return _sendError(
             message,
             "Same Voice Channel Required",
-            `You must be in the same voice channel as me to use this.`,
+            "You must be in the same voice channel as me to use this command.",
           );
         }
       }
@@ -277,14 +360,14 @@ export default {
         return _sendError(
           message,
           "No Player Active",
-          `There is no music player in this server. Use \`/play\` to start one.`,
+          "There is no music player in this server. Use `/play` to start one.",
         );
       }
       if (command.playingRequired && (!player || !player.queue.current)) {
         return _sendError(
           message,
           "Nothing Is Playing",
-          `There is no track currently playing.`,
+          "There is no track currently playing.",
         );
       }
 

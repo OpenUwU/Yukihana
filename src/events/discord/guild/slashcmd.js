@@ -8,6 +8,7 @@ import {
   MessageFlags,
   SeparatorBuilder,
   SeparatorSpacingSize,
+  SectionBuilder,
 } from "discord.js";
 
 import { config } from "#config/config";
@@ -15,6 +16,7 @@ import { db } from "#database/DatabaseManager";
 import { PlayerManager } from "#managers/PlayerManager";
 import { cooldownManager } from "#utils/cooldownManager";
 import { logger } from "#utils/logger";
+import emoji from "#config/emoji";
 import {
   canUseCommand,
   getMissingBotPermissions,
@@ -23,16 +25,24 @@ import {
 } from "#utils/permissionUtil";
 
 async function _sendError(interaction, title, description) {
+  const button = new ButtonBuilder()
+    .setLabel("Support")
+    .setURL("https://discord.gg/XYwwyDKhec")
+    .setStyle(ButtonStyle.Link);
+
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`**${title}**`),
+      new TextDisplayBuilder().setContent(`${emoji.get("cross")} **${title}**`),
     )
     .addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     )
-    .addTextDisplayComponents(new TextDisplayBuilder().setContent(description))
-    .addSeparatorComponents(
-      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(description),
+        )
+        .setButtonAccessory(button),
     );
 
   const reply = {
@@ -54,27 +64,28 @@ async function _sendError(interaction, title, description) {
 
 async function _sendPremiumError(interaction, type) {
   const button = new ButtonBuilder()
-    .setLabel("Support Server")
+    .setLabel("Support")
     .setURL("https://discord.gg/XYwwyDKhec")
     .setStyle(ButtonStyle.Link);
-  const row = new ActionRowBuilder().addComponents(button);
 
   const container = new ContainerBuilder()
     .addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`**${type} Required**`),
-    )
-    .addSeparatorComponents(
-      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
-    )
-    .addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `This command requires a **${type}** subscription.\nContact the bot owner for access.`,
+        `${emoji.get("info")} **${type} Required**`,
       ),
     )
     .addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     )
-    .addActionRowComponents(row);
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `This command requires a **${type}** subscription.\nContact the bot owner for access.`,
+          ),
+        )
+        .setButtonAccessory(button),
+    );
 
   const reply = {
     components: [container],
@@ -108,8 +119,33 @@ function getCommandFile(interaction, client) {
 
 async function handleChatInputCommand(interaction, client) {
   if (!interaction.inGuild()) {
+    const button = new ButtonBuilder()
+      .setLabel("Support")
+      .setURL("https://discord.gg/XYwwyDKhec")
+      .setStyle(ButtonStyle.Link);
+
+    const container = new ContainerBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `${emoji.get("cross")} **Server Only**`,
+        ),
+      )
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+      )
+      .addSectionComponents(
+        new SectionBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              "Commands can only be used in a server.",
+            ),
+          )
+          .setButtonAccessory(button),
+      );
+
     return interaction.reply({
-      content: "Commands can only be used in a server.",
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
       ephemeral: true,
     });
   }
@@ -121,8 +157,34 @@ async function handleChatInputCommand(interaction, client) {
       "InteractionCreate",
       `No command file found for interaction: /${interaction.commandName}`,
     );
+
+    const button = new ButtonBuilder()
+      .setLabel("Support")
+      .setURL("https://discord.gg/XYwwyDKhec")
+      .setStyle(ButtonStyle.Link);
+
+    const container = new ContainerBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `${emoji.get("cross")} **Command Error**`,
+        ),
+      )
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+      )
+      .addSectionComponents(
+        new SectionBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              "This command seems to be outdated or improperly configured.",
+            ),
+          )
+          .setButtonAccessory(button),
+      );
+
     return interaction.reply({
-      content: "This command seems to be outdated or improperly configured.",
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
       ephemeral: true,
     });
   }

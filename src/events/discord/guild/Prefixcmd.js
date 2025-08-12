@@ -8,6 +8,8 @@ import {
   SeparatorBuilder,
   SeparatorSpacingSize,
   SectionBuilder,
+  PermissionFlagsBits,
+  PermissionsBitField,
 } from "discord.js";
 import { logger } from "#utils/logger";
 import { db } from "#database/DatabaseManager";
@@ -298,7 +300,7 @@ export default {
         return _sendError(
           message,
           "Insufficient Permissions",
-          `You do not have the required permissions to use this command, you need: \`${command.userpermissions.join(", ")}\``,
+          `You do not have the required permissions to use this command, you need: \`${new PermissionsBitField(command.userPermissions).toArray().join(", ")}\``,
         );
       }
 

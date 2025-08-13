@@ -28,20 +28,28 @@ export class CommandHandler {
                 const commandsAbsolutePath = path.join(__dirname, dirPath);
 
                 try {
-                        await this._recursivelyLoadCommands(commandsAbsolutePath);
+                        await this._recursivelyLoadCommands(
+                                commandsAbsolutePath,
+                        );
                         this._finalizeSlashCommands();
                         logger.success(
                                 "CommandHandler",
                                 `Loaded ${this.commands.size} prefix and ${this.slashCommandFiles.size} slash commands.`,
                         );
                 } catch (error) {
-                        logger.error("CommandHandler", "Failed to load commands", error);
+                        logger.error(
+                                "CommandHandler",
+                                "Failed to load commands",
+                                error,
+                        );
                 }
         }
 
         async _recursivelyLoadCommands(dirPath, relativePath = "") {
                 try {
-                        const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+                        const entries = fs.readdirSync(dirPath, {
+                                withFileTypes: true,
+                        });
 
                         const loadPromises = entries.map(async (entry) => {
                                 const fullPath = path.join(dirPath, entry.name);
@@ -50,14 +58,27 @@ export class CommandHandler {
                                         : entry.name;
 
                                 if (entry.isDirectory()) {
-                                        await this._recursivelyLoadCommands(fullPath, currentRelativePath);
-                                } else if (entry.isFile() && entry.name.endsWith(".js")) {
-                                        const category = relativePath || "default";
+                                        await this._recursivelyLoadCommands(
+                                                fullPath,
+                                                currentRelativePath,
+                                        );
+                                } else if (
+                                        entry.isFile() &&
+                                        entry.name.endsWith(".js")
+                                ) {
+                                        const category =
+                                                relativePath || "default";
 
                                         if (!this.categories.has(category)) {
-                                                this.categories.set(category, []);
+                                                this.categories.set(
+                                                        category,
+                                                        [],
+                                                );
                                         }
-                                        await this._loadCommandFile(fullPath, category);
+                                        await this._loadCommandFile(
+                                                fullPath,
+                                                category,
+                                        );
                                 }
                         });
 
@@ -73,7 +94,9 @@ export class CommandHandler {
 
         async _loadCommandFile(filePath, category) {
                 try {
-                        const commandModule = await import(`file://${filePath}?v=${Date.now()}`);
+                        const commandModule = await import(
+                                `file://${filePath}?v=${Date.now()}`
+                        );
 
                         if (!commandModule?.default) {
                                 logger.warn(
@@ -96,7 +119,10 @@ export class CommandHandler {
                         }
 
                         if (command.enabledSlash && command.slashData) {
-                                this.slashCommandFiles.set(command.slashData.name.toString(), command);
+                                this.slashCommandFiles.set(
+                                        command.slashData.name.toString(),
+                                        command,
+                                );
                         }
 
                         this.categories.get(category)?.push(command);
@@ -125,20 +151,28 @@ export class CommandHandler {
                                         group = {
                                                 name: groupName,
                                                 description:
-                                                        restOfSlashData.groupDescription || `${groupName} commands.`,
+                                                        restOfSlashData.groupDescription ||
+                                                        `${groupName} commands.`,
                                                 options: [],
                                         };
-                                        this.slashCommands.set(groupName, group);
+                                        this.slashCommands.set(
+                                                groupName,
+                                                group,
+                                        );
                                 }
 
                                 group.options.push({
                                         name: subCommandName,
-                                        description: restOfSlashData.description,
+                                        description:
+                                                restOfSlashData.description,
                                         options: restOfSlashData.options || [],
                                         type: 1, // SUB_COMMAND
                                 });
                         } else {
-                                this.slashCommands.set(name, { name, ...restOfSlashData });
+                                this.slashCommands.set(name, {
+                                        name,
+                                        ...restOfSlashData,
+                                });
                         }
                 }
         }
@@ -147,4 +181,24 @@ export class CommandHandler {
                 return Array.from(this.slashCommands.values());
         }
 
+        async reloadAllCommands() {
+                logger.info("CommandHandler", "Reloading all commands...");
+                try {
+                        await this.loadCommands();
+                        return {
+                                success: true,
+                                message: `Reloaded ${this.commands.size} prefix and ${this.slashCommandFiles.size} slash commands.`,
+                        };
+                } catch (error) {
+                        logger.error(
+                                "CommandHandler",
+                                "A critical error occurred while reloading commands.",
+                                error,
+                        );
+                        return {
+                                success: false,
+                                message: "Failed to reload commands.",
+                        };
+                }
         }
+}

@@ -68,17 +68,6 @@ class PrefixCommand extends Command {
     const guild = ctx.guild;
     const user = isInteraction ? ctx.user : ctx.author;
 
-    if (
-      !ctx.member.permissions.has(PermissionFlagsBits.Administrator) &&
-      !config.ownerIds.includes(user.id)
-    ) {
-      return this._sendError(
-        ctx,
-        "Permission Denied",
-        "Only server administrators can change the bot prefix.",
-      );
-    }
-
     const isPremium = db.isGuildPremium(guild.id);
 
     if (newPrefix) {
@@ -153,20 +142,23 @@ class PrefixCommand extends Command {
         }));
 
     if (isPremium) {
-      this._setupCollector(reply, isInteraction ? ctx.user.id : ctx.author.id);
+      this._setupCollector(reply, isInteraction ? ctx.user.id : ctx.author.id, ctx.guild.id);
     }
   }
 
   _createStandardContainer(prefix) {
     const container = new ContainerBuilder();
+
     container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
         `### ${emoji.get("info")} Server Prefix`,
       ),
     );
+
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     );
+
     const section = new SectionBuilder()
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
@@ -179,17 +171,25 @@ class PrefixCommand extends Command {
       .setThumbnailAccessory(
         new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
       );
+
     container.addSectionComponents(section);
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    );
+
     return container;
   }
 
   _createPremiumContainer(prefixes) {
     const container = new ContainerBuilder();
+
     container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(
-        `### ${emoji.get("info")} Premium Prefix Management`,
+        `### ${emoji.get("premium")} Premium Prefix Management`,
       ),
     );
+
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     );
@@ -204,27 +204,53 @@ class PrefixCommand extends Command {
       .setThumbnailAccessory(
         new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
       );
+
     container.addSectionComponents(section);
+
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     );
 
+    if (prefixes.length > 0) {
+      const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId("prefix_remove")
+        .setPlaceholder("Select prefixes to remove...")
+        .setMinValues(1)
+        .setMaxValues(Math.min(prefixes.length, 5))
+        .addOptions(
+          prefixes.map((prefix) => ({
+            label: `Remove ${prefix}`,
+            value: prefix,
+            description: `Remove the prefix "${prefix}" from this server`,
+            emoji: "🗑️",
+          }))
+        );
+
+      container.addActionRowComponents(
+        new ActionRowBuilder().addComponents(selectMenu)
+      );
+    }
+
     const buttons = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
         .setCustomId("prefix_add")
-        .setLabel("Add Prefix")
-        .setStyle(ButtonStyle.Success)
+        .setLabel("Set New")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji(emoji.get("add"))
         .setDisabled(prefixes.length >= PREMIUM_PREFIX_LIMIT),
       new ButtonBuilder()
         .setCustomId("prefix_reset")
         .setLabel("Reset to Default")
-        .setStyle(ButtonStyle.Secondary),
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji(emoji.get("reset")),
     );
+
     container.addActionRowComponents(buttons);
+
     return container;
   }
 
-  _setupCollector(message, userId) {
+  _setupCollector(message, userId, guildId) {
     const collector = message.createMessageComponentCollector({
       filter: (i) => i.user.id === userId,
       time: 300_000,
@@ -243,46 +269,87 @@ class PrefixCommand extends Command {
                   .setLabel("New prefix (max 5 characters)")
                   .setStyle(TextInputStyle.Short)
                   .setRequired(true)
-                  .setMaxLength(5),
+                  .setMaxLength(5)
+                  .setPlaceholder("Enter a new prefix...")
               ),
             );
+
           await interaction.showModal(modal);
 
           const modalSubmit = await interaction
             .awaitModalSubmit({ time: 60_000 })
             .catch(() => null);
+
           if (!modalSubmit) return;
 
-          const newPrefix =
-            modalSubmit.fields.getTextInputValue("new_prefix_input");
-          const guildId = modalSubmit.guild.id;
+          const newPrefix = modalSubmit.fields.getTextInputValue("new_prefix_input").trim();
 
-          if (newPrefix.length > 5)
+          if (!newPrefix) {
+            return modalSubmit.reply({
+              content: `${emoji.get("cross")} Error: Prefix cannot be empty.`,
+              ephemeral: true,
+            });
+          }
+
+          if (newPrefix.length > 5) {
             return modalSubmit.reply({
               content: `${emoji.get("cross")} Error: Prefix is too long (max 5 characters).`,
               ephemeral: true,
             });
+          }
+
           let prefixes = db.getPrefixes(guildId);
-          if (prefixes.includes(newPrefix))
+
+          if (prefixes.includes(newPrefix)) {
             return modalSubmit.reply({
               content: `${emoji.get("cross")} Error: This prefix already exists.`,
               ephemeral: true,
             });
-          if (prefixes.length >= PREMIUM_PREFIX_LIMIT)
+          }
+
+          if (prefixes.length >= PREMIUM_PREFIX_LIMIT) {
             return modalSubmit.reply({
               content: `${emoji.get("cross")} Error: Prefix limit reached.`,
               ephemeral: true,
             });
+          }
+
+          prefixes.push(newPrefix);
+          db.setPrefixes(guildId, prefixes);
 
           await modalSubmit.deferUpdate();
-          prefixes.push(newPrefix);
+
+          const updatedContainer = this._createPremiumContainer(prefixes);
+          await message.edit({ components: [updatedContainer] });
+
+        } else if (interaction.customId === "prefix_remove") {
+          const selectedPrefixes = interaction.values;
+          let prefixes = db.getPrefixes(guildId);
+
+          prefixes = prefixes.filter(p => !selectedPrefixes.includes(p));
+
+          if (prefixes.length === 0) {
+            prefixes = [config.prefix];
+          }
+
+          db.setPrefixes(guildId, prefixes);
+
+          await interaction.deferUpdate();
+
+          const updatedContainer = this._createPremiumContainer(prefixes);
+          await message.edit({ components: [updatedContainer] });
+
+        } else if (interaction.customId === "prefix_reset") {
+          const defaultPrefixes = [config.prefix];
+          db.setPrefixes(guildId, defaultPrefixes);
+
+          await interaction.deferUpdate();
+
+          const updatedContainer = this._createPremiumContainer(defaultPrefixes);
+          await message.edit({ components: [updatedContainer] });
         }
       } catch (error) {
-        logger.error(
-          "PrefixCollector",
-          "An error occurred in the prefix collector:",
-          error,
-        );
+        logger.error("PrefixCollector", "An error occurred in the prefix collector:", error);
       }
     });
 
@@ -303,11 +370,7 @@ class PrefixCommand extends Command {
         }
       } catch (error) {
         if (error.code !== 10008) {
-          logger.error(
-            "PrefixCommand",
-            "Failed to disable components on end:",
-            error,
-          );
+          logger.error("PrefixCommand", "Failed to disable components on end:", error);
         }
       }
     });
@@ -315,16 +378,20 @@ class PrefixCommand extends Command {
 
   _createSuccessResponse(title, description, prefix) {
     const container = new ContainerBuilder();
+
     container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(`### ${emoji.get("check")} ${title}`),
     );
+
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     );
+
     let fullDescription = description;
     if (COMMON_PREFIXES.includes(prefix)) {
       fullDescription += `\n\n**Warning:** Using a common prefix like \`${prefix}\` may cause conflicts with other bots.`;
     }
+
     const section = new SectionBuilder()
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(fullDescription),
@@ -332,19 +399,28 @@ class PrefixCommand extends Command {
       .setThumbnailAccessory(
         new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
       );
+
     container.addSectionComponents(section);
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    );
+
     return { components: [container], flags: MessageFlags.IsComponentsV2 };
   }
 
   async _sendError(ctx, title, description) {
     const isInteraction = !!ctx.user;
     const container = new ContainerBuilder();
+
     container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(`### ${emoji.get("cross")} ${title}`),
     );
+
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     );
+
     const section = new SectionBuilder()
       .addTextDisplayComponents(
         new TextDisplayBuilder().setContent(description),
@@ -352,7 +428,12 @@ class PrefixCommand extends Command {
       .setThumbnailAccessory(
         new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
       );
+
     container.addSectionComponents(section);
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    );
 
     const replyOptions = {
       components: [container],

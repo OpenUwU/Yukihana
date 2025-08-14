@@ -266,7 +266,7 @@ export default {
   async execute(message, client) {
     if (message.author.bot || !message.guild) return;
 
-    await _handleGuildPerks(message.guild.id, message.channel);
+    await _handleExpiredGuildPerks(message.guild.id, message.channel);
     await _handleExpiredUserPerks(message.author.id, message.author);
 
     if (
@@ -337,7 +337,7 @@ export default {
     if (!command) return;
 
     try {
-      const cooldownTime = antiAbuse.checkCooldown(message.author.id, command);
+      const cooldownTime = antiAbuse.checkCooldown(message.author.id, command,message);
       if (cooldownTime) {
         return _sendCooldownError(message, cooldownTime, command);
       }

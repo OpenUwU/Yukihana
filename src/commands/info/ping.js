@@ -26,7 +26,7 @@ class PingCommand extends Command {
 				"ping",
 				"latency"
 			],
-			cooldown: 3,
+			cooldown: 15,
 			enabledSlash: true,
 			slashData: {
 				name: "ping",

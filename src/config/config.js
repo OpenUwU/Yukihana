@@ -23,6 +23,7 @@ export const config = {
     guild: './database/data/guild.bread',
     user: './database/data/user.bread',
     premium: './database/data/premium.bread',
+    antiabuse: './database/data/antiabuse.bread',
   },
   links: {
     supportServer: "https://google.com"

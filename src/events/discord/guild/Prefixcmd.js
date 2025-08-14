@@ -13,7 +13,7 @@ import {
 } from "discord.js";
 import { logger } from "#utils/logger";
 import { db } from "#database/DatabaseManager";
-import { cooldownManager } from "#utils/cooldownManager";
+import { antiAbuse } from "#utils/AntiAbuse";
 import emoji from "#config/emoji";
 import {
   canUseCommand,
@@ -91,6 +91,45 @@ async function _sendPremiumError(message, type) {
     flags: MessageFlags.IsComponentsV2,
     ephemeral: true,
   });
+}
+
+async function _sendCooldownError(message, cooldownTime, command) {
+  if (!antiAbuse.shouldShowCooldownNotification(message.author.id, command.name)) {
+    return;
+  }
+
+  const button = new ButtonBuilder()
+    .setLabel("Support")
+    .setURL(config.links.supportServer)
+    .setStyle(ButtonStyle.Link);
+
+  const hasPremium = db.hasAnyPremium(message.author.id, message.guild.id);
+  const premiumText = hasPremium ? "" : "\n\n*Premium users get 50% faster cooldowns*";
+
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get("cross")} **Cooldown Active**`),
+    )
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    )
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `Please wait **${cooldownTime}** more second(s) before using this command again.${premiumText}`,
+          ),
+        )
+        .setButtonAccessory(button),
+    );
+
+  try {
+    await message.reply({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
+      ephemeral: true,
+    });
+  } catch (e) {}
 }
 
 async function _handleExpiredUserPerks(userId, author) {
@@ -223,14 +262,276 @@ export default {
 
     await _handleExpiredGuildPerks(message.guild.id, message.channel);
     await _handleExpiredUserPerks(message.author.id, message.author);
+    
     if (
       db.isUserBlacklisted(message.author.id) ||
       db.isGuildBlacklisted(message.guild.id)
     )
       return;
 
-    const mentionRegex = new RegExp(`^<@!?${client.user.id}>\\s*$`);
+    const mentionRegex = new RegExp(`^<@!?${client.user.id}>\\s*import {
+  ContainerBuilder,
+  TextDisplayBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  MessageFlags,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  SectionBuilder,
+  PermissionFlagsBits,
+  PermissionsBitField,
+} from "discord.js";
+import { logger } from "#utils/logger";
+import { db } from "#database/DatabaseManager";
+import { antiAbuse } from "#utils/AntiAbuse";
+import emoji from "#config/emoji";
+import {
+  canUseCommand,
+  getMissingBotPermissions,
+  inSameVoiceChannel,
+} from "#utils/permissionUtil";
+import { config } from "#config/config";
+import { PlayerManager } from "#managers/PlayerManager";
+
+async function _sendError(message, title, description) {
+  const button = new ButtonBuilder()
+    .setLabel("Support")
+    .setURL(config.links.supportServer)
+    .setStyle(ButtonStyle.Link);
+
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get("cross")} **${title}**`),
+    )
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    )
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(description),
+        )
+        .setButtonAccessory(button),
+    );
+
+  const reply = {
+    components: [container],
+    flags: MessageFlags.IsComponentsV2,
+    ephemeral: true,
+  };
+
+  try {
+    if (message.replied || message.deferred) {
+      await message.followUp(reply);
+    } else {
+      await message.reply(reply);
+    }
+  } catch (e) {}
+}
+
+async function _sendPremiumError(message, type) {
+  const button = new ButtonBuilder()
+    .setLabel("Support")
+    .setURL(config.links.supportServer)
+    .setStyle(ButtonStyle.Link);
+
+  const typeText = type === "user" ? "User Premium" : "Guild Premium";
+
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `${emoji.get("info")} **${typeText} Required**`,
+      ),
+    )
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    )
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            "This command is an exclusive feature for our premium subscribers.",
+          ),
+        )
+        .setButtonAccessory(button),
+    );
+
+  await message.reply({
+    components: [container],
+    flags: MessageFlags.IsComponentsV2,
+    ephemeral: true,
+  });
+}
+
+async function _sendCooldownError(message, cooldownTime, command) {
+  if (!antiAbuse.shouldShowCooldownNotification(message.author.id, command.name)) {
+    return;
+  }
+
+  const button = new ButtonBuilder()
+    .setLabel("Support")
+    .setURL(config.links.supportServer)
+    .setStyle(ButtonStyle.Link);
+
+  const hasPremium = db.hasAnyPremium(message.author.id, message.guild.id);
+  const premiumText = hasPremium ? "" : "\n\n*Premium users get 50% faster cooldowns*";
+
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get("cross")} **Cooldown Active**`),
+    )
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    )
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `Please wait **${cooldownTime}** more second(s) before using this command again.${premiumText}`,
+          ),
+        )
+        .setButtonAccessory(button),
+    );
+
+  try {
+    await message.reply({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
+      ephemeral: true,
+    });
+  } catch (e) {}
+}
+
+async function _handleExpiredUserPerks(userId, author) {
+  const hasNoPrefix = db.hasNoPrefix(userId);
+  const userPrefixes = db.getUserPrefixes(userId);
+  if (!hasNoPrefix && userPrefixes.length === 0) return;
+
+  if (!db.isUserPremium(userId)) {
+    let perksRemoved = [];
+    if (hasNoPrefix) {
+      db.setNoPrefix(userId, false, null);
+      perksRemoved.push("No-Prefix Mode");
+    }
+    if (userPrefixes.length > 0) {
+      db.setUserPrefixes(userId, []);
+      perksRemoved.push("Custom User Prefixes");
+    }
+
+    if (perksRemoved.length > 0 && Math.random() < 0.3) {
+      const button = new ButtonBuilder()
+        .setLabel("Support")
+        .setURL(config.links.supportServer)
+        .setStyle(ButtonStyle.Link);
+
+      const container = new ContainerBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `${emoji.get("info")} **User Premium Expired**`,
+          ),
+        )
+        .addSeparatorComponents(
+          new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+        )
+        .addSectionComponents(
+          new SectionBuilder()
+            .addTextDisplayComponents(
+              new TextDisplayBuilder().setContent(
+                "Your subscription has ended. The following perks have been disabled:\n• " +
+                  perksRemoved.join("\n• "),
+              ),
+            )
+            .setButtonAccessory(button),
+        );
+
+      try {
+        await author.send({
+          components: [container],
+          flags: MessageFlags.IsComponentsV2,
+        });
+      } catch {}
+    }
+  }
+}
+
+async function _handleExpiredGuildPerks(guildId, channel) {
+  if (db.isGuildPremium(guildId)) return;
+  const prefixes = db.getPrefixes(guildId);
+  if (prefixes.length > 1) {
+    db.setPrefixes(guildId, [config.prefix]);
+
+    const button = new ButtonBuilder()
+      .setLabel("Support")
+      .setURL(config.links.supportServer)
+      .setStyle(ButtonStyle.Link);
+
+    const container = new ContainerBuilder()
+      .addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(
+          `${emoji.get("info")} **Server Premium Expired**`,
+        ),
+      )
+      .addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+      )
+      .addSectionComponents(
+        new SectionBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(
+              `This server's premium has expired. Multiple prefixes have been disabled, and the prefix has been reset to: \`${config.prefix}\``,
+            ),
+          )
+          .setButtonAccessory(button),
+      );
+
+    try {
+      await channel.send({
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
+      });
+    } catch {}
+  }
+}
+
+function _parseCommand(message, client) {
+  const content = message.content.trim();
+  const mentionPrefixRegex = new RegExp(`^<@!?${client.user.id}>\\s+`);
+  const mentionMatch = content.match(mentionPrefixRegex);
+  let commandText = null;
+
+  if (mentionMatch) {
+    commandText = content.slice(mentionMatch[0].length).trim();
+  } else {
+    if (db.isUserPremium(message.author.id)) {
+      const userPrefix = db
+        .getUserPrefixes(message.author.id)
+        .find((p) => content.startsWith(p));
+      if (userPrefix) commandText = content.slice(userPrefix.length).trim();
+    }
+    if (commandText === null) {
+      const guildPrefix = db
+        .getPrefixes(message.guild.id)
+        .find((p) => content.startsWith(p));
+      if (guildPrefix) commandText = content.slice(guildPrefix.length).trim();
+    }
+    if (commandText === null && db.hasNoPrefix(message.author.id)) {
+      commandText = content;
+    }
+  }
+
+  if (commandText === null) return null;
+  const parts = commandText.split(/\s+/);
+  const commandName = parts.shift()?.toLowerCase();
+  return commandName ? { commandName, args: parts } : null;
+}
+
+);
     if (mentionRegex.test(message.content.trim())) {
+      if (!antiAbuse.canShowMentionResponse(message.author.id)) {
+        return;
+      }
+
       const guildPrefixes = db.getPrefixes(message.guild.id);
       const userPrefixes = db.getUserPrefixes(message.author.id);
 
@@ -281,6 +582,14 @@ export default {
     if (!command) return;
 
     try {
+      const cooldownTime = antiAbuse.checkCooldown(
+        message.author.id,
+        command,
+      );
+      if (cooldownTime) {
+        return _sendCooldownError(message, cooldownTime, command);
+      }
+
       if (
         command.maintenance &&
         !config.ownerIds?.includes(message.author.id)
@@ -328,18 +637,6 @@ export default {
       )
         return _sendPremiumError(message, "user");
 
-      const cooldownTime = cooldownManager.checkCooldown(
-        message.author.id,
-        command,
-      );
-      if (cooldownTime) {
-        return _sendError(
-          message,
-          "Cooldown Active",
-          `Please wait **${cooldownTime}** more second(s) before using this command again.`,
-        );
-      }
-
       if (command.voiceRequired && !message.member.voice.channel) {
         return _sendError(
           message,
@@ -378,7 +675,7 @@ export default {
         executionContext.pm = new PlayerManager(player);
       }
 
-      cooldownManager.setCooldown(message.author.id, command);
+      antiAbuse.setCooldown(message.author.id, command);
       await command.execute(executionContext);
     } catch (error) {
       logger.error(

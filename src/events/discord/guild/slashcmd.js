@@ -14,7 +14,7 @@ import {
 import { config } from "#config/config";
 import { db } from "#database/DatabaseManager";
 import { PlayerManager } from "#managers/PlayerManager";
-import { cooldownManager } from "#utils/cooldownManager";
+import { antiAbuse } from "#utils/AntiAbuse";
 import { logger } from "#utils/logger";
 import emoji from "#config/emoji";
 import {
@@ -108,6 +108,47 @@ async function _sendPremiumError(interaction, type) {
   }
 }
 
+async function _sendCooldownError(interaction, cooldownTime, command) {
+  if (!antiAbuse.shouldShowCooldownNotification(interaction.user.id, command.name)) {
+    return;
+  }
+
+  const button = new ButtonBuilder()
+    .setLabel("Support")
+    .setURL("https://discord.gg/XYwwyDKhec")
+    .setStyle(ButtonStyle.Link);
+
+  const hasPremium = db.hasAnyPremium(interaction.user.id, interaction.guild.id);
+  const premiumText = hasPremium ? "" : "\n\n*Premium users get 50% faster cooldowns*";
+
+  const container = new ContainerBuilder()
+    .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get("cross")} **Cooldown Active**`),
+    )
+    .addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    )
+    .addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(
+            `Please wait **${cooldownTime}** more second(s) before using this command.${premiumText}`,
+          ),
+        )
+        .setButtonAccessory(button),
+    );
+
+  try {
+    await interaction.reply({
+      components: [container],
+      flags: MessageFlags.IsComponentsV2,
+      ephemeral: true,
+    });
+  } catch (error) {
+    logger.error("InteractionCreate", "Failed to send cooldown error.", error);
+  }
+}
+
 function getCommandFile(interaction, client) {
   const { commandName } = interaction;
   const subCommandName = interaction.options.getSubcommand(false);
@@ -190,6 +231,14 @@ async function handleChatInputCommand(interaction, client) {
   }
 
   try {
+    const cooldownTime = antiAbuse.checkCooldown(
+      interaction.user.id,
+      commandToExecute,
+    );
+    if (cooldownTime) {
+      return _sendCooldownError(interaction, cooldownTime, commandToExecute);
+    }
+
     if (
       db.isUserBlacklisted(interaction.user.id) ||
       db.isGuildBlacklisted(interaction.guild.id)
@@ -261,18 +310,6 @@ async function handleChatInputCommand(interaction, client) {
     )
       return _sendPremiumError(interaction, "Premium");
 
-    const cooldownTime = cooldownManager.checkCooldown(
-      interaction.user.id,
-      commandToExecute,
-    );
-    if (cooldownTime) {
-      return _sendError(
-        interaction,
-        "Cooldown Active",
-        `Please wait **${cooldownTime}** more second(s) before using this command.`,
-      );
-    }
-
     if (commandToExecute.voiceRequired && !interaction.member.voice.channel) {
       return _sendError(
         interaction,
@@ -321,7 +358,7 @@ async function handleChatInputCommand(interaction, client) {
       executionContext.pm = new PlayerManager(player);
     }
 
-    cooldownManager.setCooldown(interaction.user.id, commandToExecute);
+    antiAbuse.setCooldown(interaction.user.id, commandToExecute);
     await commandToExecute.slashExecute(executionContext);
   } catch (error) {
     logger.error(

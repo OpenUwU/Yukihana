@@ -138,6 +138,226 @@ async function _sendCooldownError(message, cooldownTime, command) {
   } catch (e) {}
 }
 
+async function _createTOSContainer() {
+  const container = new ContainerBuilder();
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(`${emoji.get('info')} **Terms of Service**`)
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+  );
+
+  const content = `**By using Yukihana, you agree to these terms:**\n\n` +
+    `**${emoji.get('check')} Acceptable Use**\n` +
+    `├─ Use the bot responsibly and follow Discord's Terms of Service\n` +
+    `├─ Respect all cooldowns and rate limits for fair usage\n` +
+    `├─ Do not attempt to exploit or abuse bot systems\n` +
+    `└─ Maintain appropriate conduct in all interactions\n\n` +
+    `**${emoji.get('folder')} Service Provision**\n` +
+    `├─ Service is provided "as-is" without uptime guarantees\n` +
+    `├─ Features may be modified or discontinued with notice\n` +
+    `├─ Premium features are subject to additional terms\n` +
+    `└─ We reserve the right to limit or suspend access\n\n` +
+    `**${emoji.get('cross')} Prohibited Activities**\n` +
+    `├─ Using the bot for illegal activities or copyright infringement\n` +
+    `├─ Attempting to bypass anti-abuse or security systems\n` +
+    `├─ Distributing malicious content or spam through the bot\n` +
+    `└─ Disrupting service availability for other users\n\n` +
+    `**${emoji.get('reset')} Data & Privacy**\n` +
+    `├─ We collect minimal data necessary for functionality\n` +
+    `├─ User data is stored securely and not shared inappropriately\n` +
+    `├─ You may request data deletion at any time\n` +
+    `└─ See our Privacy Policy for complete data handling details\n\n` +
+    `**${emoji.get('add')} Enforcement**\n` +
+    `├─ Violations may result in cooldown penalties or blacklisting\n` +
+    `├─ Automated systems monitor for abuse patterns\n` +
+    `├─ Appeals may be submitted through official channels\n` +
+    `└─ Decisions are made at the discretion of the development team\n\n` +
+    `*Effective: August 2025 | By using this bot, you acknowledge and accept these terms.*`;
+
+  const section = new SectionBuilder()
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+  container.addSectionComponents(section);
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+  );
+
+  return container;
+}
+
+async function _createPPContainer() {
+  const container = new ContainerBuilder();
+
+  container.addTextDisplayComponents(
+    new TextDisplayBuilder().setContent(`${emoji.get('info')} **Privacy Policy**`)
+  );
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+  );
+
+  const content = `**We value your privacy and handle data responsibly:**\n\n` +
+    `**1. Data We Collect**\n` +
+    `├─ Discord User ID for identification and bot functionality\n` +
+    `├─ Guild ID for server-specific settings and configurations\n` +
+    `├─ Music listening history for personalized recommendations\n` +
+    `├─ Custom prefixes and bot preferences you configure\n` +
+    `└─ Premium status and subscription information\n\n` +
+    `**2. How We Use Data**\n` +
+    `├─ Providing core bot functionality and music services\n` +
+    `├─ Maintaining user preferences and custom settings\n` +
+    `├─ Anti-abuse protection and cooldown management\n` +
+    `├─ Premium feature access and subscription management\n` +
+    `└─ Improving service quality and user experience\n\n` +
+    `**3. Data Storage & Security**\n` +
+    `├─ Data is stored securely in encrypted databases\n` +
+    `├─ We implement industry-standard security measures\n` +
+    `├─ Regular backups ensure data integrity and availability\n` +
+    `└─ Access is restricted to authorized development team members\n\n` +
+    `**4. Data Sharing**\n` +
+    `├─ We do not sell or share personal data with third parties\n` +
+    `├─ Music metadata may be sourced from public APIs\n` +
+    `├─ Anonymous usage statistics may be collected for improvements\n` +
+    `└─ Legal compliance may require data disclosure when required\n\n` +
+    `**5. Your Rights**\n` +
+    `├─ Request data deletion by contacting our support team\n` +
+    `├─ View your stored data through bot commands\n` +
+    `├─ Opt-out of data collection by discontinuing bot usage\n` +
+    `└─ Update or correct your information at any time\n\n` +
+    `*Last updated: August 2025*`;
+
+  const section = new SectionBuilder()
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+  container.addSectionComponents(section);
+
+  container.addSeparatorComponents(
+    new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+  );
+
+  return container;
+}
+
+async function _sendTOSAcceptance(message) {
+  const container = await _createTOSContainer();
+
+  const buttons = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`tos_accept_${message.author.id}`)
+      .setLabel("Accept Terms")
+      .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId(`tos_decline_${message.author.id}`)
+      .setLabel("Decline")
+      .setStyle(ButtonStyle.Danger)
+  );
+
+  container.addActionRowComponents(buttons);
+
+  const reply = await message.reply({
+    components: [container],
+    flags: MessageFlags.IsComponentsV2,
+  });
+
+  const filter = (i) => 
+    i.user.id === message.author.id && 
+    (i.customId === `tos_accept_${message.author.id}` || i.customId === `tos_decline_${message.author.id}`);
+
+  const collector = reply.createMessageComponentCollector({
+    filter,
+    time: 300_000,
+    max: 1
+  });
+
+  return new Promise((resolve) => {
+    collector.on('collect', async (interaction) => {
+      await interaction.deferUpdate();
+
+      if (interaction.customId === `tos_accept_${message.author.id}`) {
+        db.user.acceptTOS(message.author.id, "v1.0");
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    });
+
+    collector.on('end', async (collected) => {
+      if (collected.size === 0) {
+        resolve(false);
+      }
+
+      try {
+        const finalContainer = await _createTOSContainer();
+        await reply.edit({
+          components: [finalContainer],
+          flags: MessageFlags.IsComponentsV2,
+        });
+      } catch (e) {}
+    });
+  });
+}
+
+async function _sendPPAcceptance(message) {
+  const container = await _createPPContainer();
+
+  const buttons = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`pp_accept_${message.author.id}`)
+      .setLabel("Accept Policy")
+      .setStyle(ButtonStyle.Success),
+    new ButtonBuilder()
+      .setCustomId(`pp_decline_${message.author.id}`)
+      .setLabel("Decline")
+      .setStyle(ButtonStyle.Danger)
+  );
+
+  container.addActionRowComponents(buttons);
+
+  const reply = await message.reply({
+    components: [container],
+    flags: MessageFlags.IsComponentsV2,
+  });
+
+  const filter = (i) => 
+    i.user.id === message.author.id && 
+    (i.customId === `pp_accept_${message.author.id}` || i.customId === `pp_decline_${message.author.id}`);
+
+  const collector = reply.createMessageComponentCollector({
+    filter,
+    time: 300_000,
+    max: 1
+  });
+
+  return new Promise((resolve) => {
+    collector.on('collect', async (interaction) => {
+      await interaction.deferUpdate();
+
+      if (interaction.customId === `pp_accept_${message.author.id}`) {
+        db.user.acceptPP(message.author.id, "v1.0");
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    });
+
+    collector.on('end', async (collected) => {
+      if (collected.size === 0) {
+        resolve(false);
+      }
+
+      try {
+        const finalContainer = await _createPPContainer();
+        await reply.edit({
+          components: [finalContainer],
+          flags: MessageFlags.IsComponentsV2,
+        });
+      } catch (e) {}
+    });
+  });
+}
+
 async function _handleExpiredUserPerks(userId, author) {
   const hasNoPrefix = db.hasNoPrefix(userId);
   const userPrefixes = db.getUserPrefixes(userId);
@@ -337,9 +557,33 @@ export default {
     if (!command) return;
 
     try {
-      const cooldownTime = antiAbuse.checkCooldown(message.author.id, command,message);
+      const cooldownTime = antiAbuse.checkCooldown(message.author.id, command, message);
       if (cooldownTime) {
         return _sendCooldownError(message, cooldownTime, command);
+      }
+
+      if (!db.user.hasAcceptedBoth(message.author.id)) {
+        if (!db.user.hasAcceptedTOS(message.author.id)) {
+          const tosAccepted = await _sendTOSAcceptance(message);
+          if (!tosAccepted) {
+            return _sendError(
+              message,
+              "Terms Required",
+              "You must accept our Terms of Service to use this bot."
+            );
+          }
+        }
+
+        if (!db.user.hasAcceptedPP(message.author.id)) {
+          const ppAccepted = await _sendPPAcceptance(message);
+          if (!ppAccepted) {
+            return _sendError(
+              message,
+              "Privacy Policy Required",
+              "You must accept our Privacy Policy to use this bot."
+            );
+          }
+        }
       }
 
       if (

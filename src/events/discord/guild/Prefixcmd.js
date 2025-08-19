@@ -8,6 +8,7 @@ import {
   SeparatorBuilder,
   SeparatorSpacingSize,
   SectionBuilder,
+  ThumbnailBuilder,
   PermissionFlagsBits,
   PermissionsBitField,
 } from "discord.js";
@@ -40,6 +41,11 @@ async function _sendError(message, title, description) {
       new SectionBuilder()
         .addTextDisplayComponents(
           new TextDisplayBuilder().setContent(description),
+        )
+        .setThumbnailAccessory(
+          new ThumbnailBuilder().setURL(
+            config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork || 'https://cdn.discordapp.com/embed/avatars/2.png'
+          )
         )
         .setButtonAccessory(button),
     );
@@ -83,6 +89,11 @@ async function _sendPremiumError(message, type) {
             "This command is an exclusive feature for our premium subscribers.",
           ),
         )
+        .setThumbnailAccessory(
+          new ThumbnailBuilder().setURL(
+            config.assets?.premiumIcon || config.assets?.defaultThumbnail || 'https://cdn.discordapp.com/embed/avatars/2.png'
+          )
+        )
         .setButtonAccessory(button),
     );
 
@@ -125,6 +136,11 @@ async function _sendCooldownError(message, cooldownTime, command) {
           new TextDisplayBuilder().setContent(
             `Please wait **${cooldownTime}** more second(s) before using this command again.${premiumText}`,
           ),
+        )
+        .setThumbnailAccessory(
+          new ThumbnailBuilder().setURL(
+            config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork || 'https://cdn.discordapp.com/embed/avatars/2.png'
+          )
         )
         .setButtonAccessory(button),
     );
@@ -397,6 +413,11 @@ async function _handleExpiredUserPerks(userId, author) {
                   perksRemoved.join("\n• "),
               ),
             )
+            .setThumbnailAccessory(
+              new ThumbnailBuilder().setURL(
+                config.assets?.premiumIcon || config.assets?.defaultThumbnail || 'https://cdn.discordapp.com/embed/avatars/2.png'
+              )
+            )
             .setButtonAccessory(button),
         );
 
@@ -436,6 +457,11 @@ async function _handleExpiredGuildPerks(guildId, channel) {
             new TextDisplayBuilder().setContent(
               `This server's premium has expired. Multiple prefixes have been disabled, and the prefix has been reset to: \`${config.prefix}\``,
             ),
+          )
+          .setThumbnailAccessory(
+            new ThumbnailBuilder().setURL(
+              config.assets?.premiumIcon || config.assets?.defaultThumbnail || 'https://cdn.discordapp.com/embed/avatars/2.png'
+            )
           )
           .setButtonAccessory(button),
       );
@@ -533,6 +559,11 @@ export default {
           new SectionBuilder()
             .addTextDisplayComponents(
               new TextDisplayBuilder().setContent(content),
+            )
+            .setThumbnailAccessory(
+              new ThumbnailBuilder().setURL(
+                config.assets?.helpThumbnail || config.assets?.defaultThumbnail || 'https://cdn.discordapp.com/embed/avatars/2.png'
+              )
             )
             .setButtonAccessory(button),
         );

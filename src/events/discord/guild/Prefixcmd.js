@@ -47,8 +47,7 @@ async function _sendError(message, title, description) {
             config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork || 'https://cdn.discordapp.com/embed/avatars/2.png'
           )
         )
-        .setButtonAccessory(button),
-    );
+        .setButtonAccessory(button);
 
   const reply = {
     components: [container],
@@ -94,8 +93,7 @@ async function _sendPremiumError(message, type) {
             config.assets?.premiumIcon || config.assets?.defaultThumbnail || 'https://cdn.discordapp.com/embed/avatars/2.png'
           )
         )
-        .setButtonAccessory(button),
-    );
+        .setButtonAccessory(button);
 
   await message.reply({
     components: [container],
@@ -142,8 +140,7 @@ async function _sendCooldownError(message, cooldownTime, command) {
             config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork || 'https://cdn.discordapp.com/embed/avatars/2.png'
           )
         )
-        .setButtonAccessory(button),
-    );
+        .setButtonAccessory(button);
 
   try {
     await message.reply({
@@ -194,7 +191,12 @@ async function _createTOSContainer() {
     `*Effective: August 2025 | By using this bot, you acknowledge and accept these terms.*`;
 
   const section = new SectionBuilder()
-    .addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+    .setThumbnailAccessory(
+      new ThumbnailBuilder().setURL(
+        config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork || 'https://cdn.discordapp.com/embed/avatars/2.png'
+      )
+    );
   container.addSectionComponents(section);
 
   container.addSeparatorComponents(
@@ -246,7 +248,12 @@ async function _createPPContainer() {
     `*Last updated: August 2025*`;
 
   const section = new SectionBuilder()
-    .addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
+    .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+    .setThumbnailAccessory(
+      new ThumbnailBuilder().setURL(
+        config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork || 'https://cdn.discordapp.com/embed/avatars/2.png'
+      )
+    );
   container.addSectionComponents(section);
 
   container.addSeparatorComponents(
@@ -418,8 +425,7 @@ async function _handleExpiredUserPerks(userId, author) {
                 config.assets?.premiumIcon || config.assets?.defaultThumbnail || 'https://cdn.discordapp.com/embed/avatars/2.png'
               )
             )
-            .setButtonAccessory(button),
-        );
+            .setButtonAccessory(button);
 
       try {
         await author.send({
@@ -463,8 +469,7 @@ async function _handleExpiredGuildPerks(guildId, channel) {
               config.assets?.premiumIcon || config.assets?.defaultThumbnail || 'https://cdn.discordapp.com/embed/avatars/2.png'
             )
           )
-          .setButtonAccessory(button),
-      );
+          .setButtonAccessory(button);
 
     try {
       await channel.send({
@@ -548,7 +553,7 @@ export default {
 
       const container = new ContainerBuilder()
         .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
+          new TextDisplayComponents().setContent(
             `${emoji.get("info")} **Bot Information**`,
           ),
         )
@@ -565,8 +570,7 @@ export default {
                 config.assets?.helpThumbnail || config.assets?.defaultThumbnail || 'https://cdn.discordapp.com/embed/avatars/2.png'
               )
             )
-            .setButtonAccessory(button),
-        );
+            .setButtonAccessory(button);
 
       return message.reply({
         components: [container],

@@ -5,7 +5,7 @@ export const config = {
   token:  process.env.token,
   clientId: "1031120600858624000",
   prefix: process.env.PREFIX || '.',
-  ownerIds: (process.env.OWNER_IDS || '931059762173464597, 937380760875302974, 1052620216443601076, 958583892326117437, 785708354445508649').split(', ').filter(Boolean),
+  ownerIds: (process.env.OWNER_IDS || '931059762173464597').split(', ').filter(Boolean),
   nodes: [
     {
       id: "main-node",

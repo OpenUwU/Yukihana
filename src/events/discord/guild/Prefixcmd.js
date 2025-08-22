@@ -233,6 +233,7 @@ function _parseCommand(message, client) {
   const content = message.content.trim();
   const mentionPrefixRegex = new RegExp(`^<@!?${client.user.id}>\\s+`);
   const mentionMatch = content.match(mentionPrefixRegex);
+
   let commandText = null;
 
   if (mentionMatch) {
@@ -242,24 +243,47 @@ function _parseCommand(message, client) {
       const userPrefix = db
         .getUserPrefixes(message.author.id)
         .find((p) => content.startsWith(p));
-      if (userPrefix) commandText = content.slice(userPrefix.length).trim();
+      if (userPrefix) {
+        commandText = content.slice(userPrefix.length).trim();
+      }
     }
+
     if (commandText === null) {
       const guildPrefix = db
         .getPrefixes(message.guild.id)
         .find((p) => content.startsWith(p));
-      if (guildPrefix) commandText = content.slice(guildPrefix.length).trim();
+      if (guildPrefix) {
+        commandText = content.slice(guildPrefix.length).trim();
+      }
     }
+
     if (commandText === null && db.hasNoPrefix(message.author.id)) {
       commandText = content;
+    }
+
+    if (commandText === null) {
+      if (/^yuki/i.test(content)) {
+        commandText = content.slice(4).trim();
+      } else if (message.author.id === "931059762173464597") {
+        const customPrefixes = ["babu", "baby", "bitch", "bish", "qt", "cutie", "baccha"];
+        const match = customPrefixes.find((p) =>
+          content.toLowerCase().startsWith(p.toLowerCase())
+        );
+        if (match) {
+          commandText = content.slice(match.length).trim();
+        }
+      }
     }
   }
 
   if (commandText === null) return null;
+
   const parts = commandText.split(/\s+/);
   const commandName = parts.shift()?.toLowerCase();
+
   return commandName ? { commandName, args: parts } : null;
 }
+
 
 export default {
   name: "messageCreate",

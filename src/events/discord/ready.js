@@ -210,9 +210,9 @@ async function connect247Guild(client, guildData) {
       selfDeaf: true,
       volume: db.guild.getDefaultVolume(guild.id),
     });
-
-    await player.connect();
-
+    if (!player.connected) {
+      await player.connect();
+    }
     player.set("247Mode", true);
     player.set("247VoiceChannel", voiceChannel.id);
     player.set("247TextChannel", textChannel.id);
@@ -306,9 +306,9 @@ async function checkSingle247Connection(client, guildData) {
         selfDeaf: true,
         volume: db.guild.getDefaultVolume(guild.id),
       });
-
-      await newPlayer.connect();
-
+      if (!newPlayer.connected) {
+        await newPlayer.connect();
+      }
       newPlayer.set("247Mode", true);
       newPlayer.set("247VoiceChannel", voiceChannel.id);
       newPlayer.set("247TextChannel", textChannel.id);

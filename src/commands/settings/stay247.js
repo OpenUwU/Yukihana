@@ -1,132 +1,225 @@
-import { PermissionFlagsBits } from 'discord.js';
+import { Command } from "#structures/classes/Command";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  ButtonStyle,
+  ContainerBuilder,
+  MessageFlags,
+  PermissionFlagsBits,
+  SectionBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
+  TextDisplayBuilder,
+  ThumbnailBuilder,
+} from "discord.js";
+import { config } from "#config/config";
+import emoji from "#config/emoji";
+import { db } from "#database/DatabaseManager";
+import { logger } from "#utils/logger";
 
-import { db } from '#database/DatabaseManager';
-import { logger } from '#utils/logger';
-
-export default {
-  name: '247',
-  aliases: ['stay247', 'alwayson', 'keepalive', '24/7'],
-  description: 'Toggle 24/7 mode to keep the bot connected to a voice channel',
-  category: 'settings',
-  usage: '247 [on/off]',
-  examples: [
-    '247 - Show current status',
-    '247 on - Enable 24/7 mode in your current voice channel',
-    '247 off - Disable 24/7 mode',
-  ],
-  cooldown: 5,
-  userPermissions: [PermissionFlagsBits.ManageGuild],
-  botPermissions: [PermissionFlagsBits.Connect, PermissionFlagsBits.Speak],
+class Stay247Command extends Command {
+  constructor() {
+    super({
+      name: "247",
+      description: "Toggle 24/7 mode to keep the bot connected to a voice channel",
+      usage: "247 [on/off]",
+      aliases: ["stay247", "alwayson", "keepalive", "24/7"],
+      category: "settings",
+      examples: [
+        "247",
+        "247 on",
+        "247 off"
+      ],
+      cooldown: 5,
+      userPermissions: [PermissionFlagsBits.ManageGuild],
+      botPermissions: [PermissionFlagsBits.Connect, PermissionFlagsBits.Speak],
+      enabledSlash: true,
+      slashData: {
+        name: "247",
+        description: "Toggle 24/7 mode to keep the bot connected to a voice channel",
+        options: [
+          {
+            name: "action",
+            description: "Enable or disable 24/7 mode",
+            type: 3,
+            required: false,
+            choices: [
+              {
+                name: "Enable",
+                value: "on"
+              },
+              {
+                name: "Disable",
+                value: "off"
+              }
+            ]
+          }
+        ]
+      },
+    });
+  }
 
   async execute({ message, args }) {
     try {
-      const guildId   =message.guild.id;
-      const current247Settings   =db.guild.get247Settings(guildId);
+      const guildId = message.guild.id;
+      const current247Settings = db.guild.get247Settings(guildId);
+      const action = args[0]?.toLowerCase();
 
-
-      if (args.length === 0) {
-        return await this.showStatus(message, current247Settings);
+      if (!action) {
+        await message.reply({
+          components: [this._createStatusContainer(current247Settings, message.guild, message.client)],
+          flags: MessageFlags.IsComponentsV2,
+        });
+        return;
       }
 
-      const action   =args[0].toLowerCase();
-
-      if (['on', 'enable', 'true', 'start'].includes(action)) {
-        return await this.enable247Mode(message, current247Settings);
-      } else if (['off', 'disable', 'false', 'stop'].includes(action)) {
-        return await this.disable247Mode(message, current247Settings);
+      if (["on", "enable", "true", "start"].includes(action)) {
+        await message.reply({
+          components: [await this._handleEnable247(message, current247Settings)],
+          flags: MessageFlags.IsComponentsV2,
+        });
+      } else if (["off", "disable", "false", "stop"].includes(action)) {
+        await message.reply({
+          components: [await this._handleDisable247(message, current247Settings)],
+          flags: MessageFlags.IsComponentsV2,
+        });
+      } else {
+        await message.reply({
+          components: [this._createErrorContainer("Invalid option. Use: `247 on` or `247 off`")],
+          flags: MessageFlags.IsComponentsV2,
+        });
       }
-      return message.reply({
-        content: '❌ **Invalid option.** Use: `247 on` or `247 off`.\n\nFor more help, use: `help 247`',
-      });
     } catch (error) {
-      logger.error('247Command', 'Error in 24/7 command:', error);
-      return message.reply({
-        content: `❌ **An error occurred while changing 24/7 settings.** Please try again later.`,
-      });
+      logger.error("Stay247Command", `Error in prefix command: ${error.message}`, error);
+      await message.reply({
+        components: [this._createErrorContainer("An error occurred while changing 24/7 settings.")],
+        flags: MessageFlags.IsComponentsV2,
+      }).catch(() => {});
     }
-  },
+  }
 
-  async showStatus(message, current247Settings) {
-    const { guild }   =message;
-    let statusText;
+  async slashExecute({ interaction }) {
+    try {
+      const guildId = interaction.guild.id;
+      const current247Settings = db.guild.get247Settings(guildId);
+      const action = interaction.options.getString("action");
 
-    if (current247Settings.enabled) {
-      const voiceChannel   =current247Settings.voiceChannel
-        ? guild.channels.cache.get(current247Settings.voiceChannel)
-        : null;
-      const textChannel   =current247Settings.textChannel
-        ? guild.channels.cache.get(current247Settings.textChannel)
-        : null;
+      if (!action) {
+        await interaction.reply({
+          components: [this._createStatusContainer(current247Settings, interaction.guild, interaction.client)],
+          flags: MessageFlags.IsComponentsV2,
+        });
+        return;
+      }
 
-      statusText   =`🟢 **24/7 Mode: ENABLED**
-📍 **Voice Channel:** ${voiceChannel ? `${ voiceChannel.name} (${voiceChannel})` : '⚠️ Channel not found' }
-💬 **Text Channel:** ${textChannel ? `${ textChannel.name} (${textChannel})` : '📍 Same as voice channel' }
-🔄 **Auto Disconnect:** ${current247Settings.autoDisconnect ? 'Disabled' : 'Enabled'}`;
-    } else {
-      statusText   =`🔴 **24/7 Mode: DISABLED**
-🔄 **Auto Disconnect:** ${current247Settings.autoDisconnect ? 'Enabled' : 'Disabled'}`;
+      if (action === "on") {
+        await interaction.reply({
+          components: [await this._handleEnable247(interaction, current247Settings)],
+          flags: MessageFlags.IsComponentsV2,
+        });
+      } else if (action === "off") {
+        await interaction.reply({
+          components: [await this._handleDisable247(interaction, current247Settings)],
+          flags: MessageFlags.IsComponentsV2,
+        });
+      }
+    } catch (error) {
+      logger.error("Stay247Command", `Error in slash command: ${error.message}`, error);
+      const errorPayload = {
+        components: [this._createErrorContainer("An error occurred while changing 24/7 settings.")],
+        ephemeral: true,
+      };
+      if (interaction.replied || interaction.deferred) {
+        await interaction.editReply(errorPayload).catch(() => {});
+      } else {
+        await interaction.reply(errorPayload).catch(() => {});
+      }
+    }
+  }
+
+  _createStatusContainer(settings, guild, client) {
+    const container = new ContainerBuilder();
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get('info')} **24/7 Mode Status**`)
+    );
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    let content = `**Current Status:** ${settings.enabled ? `${emoji.get('check')} Enabled` : `${emoji.get('cross')} Disabled`}\n\n`;
+
+    if (settings.enabled) {
+      const voiceChannel = settings.voiceChannel ? guild.channels.cache.get(settings.voiceChannel) : null;
+      const textChannel = settings.textChannel ? guild.channels.cache.get(settings.textChannel) : null;
+
+      content += `**${emoji.get('folder')} Configuration**\n`;
+      content += `├─ **Voice Channel:** ${voiceChannel ? `${voiceChannel.name}` : 'Channel not found'}\n`;
+      content += `├─ **Text Channel:** ${textChannel ? `${textChannel.name}` : 'Same as voice channel'}\n`;
+      content += `└─ **Auto Disconnect:** ${settings.autoDisconnect ? 'Enabled' : 'Disabled'}\n\n`;
     }
 
-    const player   =message.client.music?.getPlayer(guild.id);
-    const connectionStatus   =player && player.voiceChannelId
-      ? `🎵 **Currently Connected:** <#${player.voiceChannelId}>`
-      : `🔇 **Currently:** Not connected`;
+    const player = client.music?.getPlayer(guild.id);
+    const connectionStatus = player && player.voiceChannelId 
+      ? `${emoji.get('check')} Connected to <#${player.voiceChannelId}>`
+      : `${emoji.get('cross')} Not connected`;
 
-    return message.reply({
-      embeds: [{
-        title: '🎵 24/7 Mode Status',
-        description: `${statusText}\n\n${connectionStatus}`,
-        color: current247Settings.enabled ? 0x00ff00 : 0xff0000,
-        footer: {
-          text: 'Use "247 on" to enable • "247 off" to disable',
-        },
-      }],
-    });
-  },
+    content += `**${emoji.get('reset')} Connection Status**\n`;
+    content += `└─ ${connectionStatus}`;
 
-  async enable247Mode(message, current247Settings) {
-    const { guild, member, channel }   =message;
+    const thumbnailUrl = config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork;
 
+    const section = new SectionBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(thumbnailUrl));
 
-    const targetVoiceChannel   =member.voice?.channel;
-    const targetTextChannel   =channel;
+    container.addSectionComponents(section);
 
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    
+
+    return container;
+  }
+
+  async _handleEnable247(messageOrInteraction, current247Settings) {
+    const guild = messageOrInteraction.guild;
+    const member = messageOrInteraction.member;
+    const channel = messageOrInteraction.channel;
+    const client = messageOrInteraction.client;
+
+    const targetVoiceChannel = member.voice?.channel;
+    const targetTextChannel = channel;
 
     if (!targetVoiceChannel) {
-      return message.reply({
-        content: '❌ **You must be in a voice channel to enable 24/7 mode.**',
-      });
+      return this._createErrorContainer("You must be in a voice channel to enable 24/7 mode.");
     }
 
-
-    const botMember   =guild.members.cache.get(message.client.user.id);
-    const voicePerms   =targetVoiceChannel.permissionsFor(botMember);
+    const botMember = guild.members.cache.get(client.user.id);
+    const voicePerms = targetVoiceChannel.permissionsFor(botMember);
 
     if (!voicePerms.has([PermissionFlagsBits.Connect, PermissionFlagsBits.Speak])) {
-      return message.reply({
-        content: `❌ **Missing permissions for ${targetVoiceChannel.name}.**\nI need \`Connect\` and \`Speak\` permissions in that voice channel.`,
-      });
+      return this._createErrorContainer(`Missing permissions for ${targetVoiceChannel.name}.\nI need \`Connect\` and \`Speak\` permissions in that voice channel.`);
     }
 
-
-    const textPerms   =targetTextChannel.permissionsFor(botMember);
+    const textPerms = targetTextChannel.permissionsFor(botMember);
     if (!textPerms.has([PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages])) {
-      return message.reply({
-        content: `❌ **Missing permissions for ${targetTextChannel.name}.**\nI need \`View Channel\` and \`Send Messages\` permissions in that text channel.`,
-      });
+      return this._createErrorContainer(`Missing permissions for ${targetTextChannel.name}.\nI need \`View Channel\` and \`Send Messages\` permissions in that text channel.`);
     }
 
     try {
       db.guild.set247Mode(guild.id, true, targetVoiceChannel.id, targetTextChannel.id);
-      logger.info('247Command', `24/7 mode enabled in guild ${guild.id} - Voice: ${targetVoiceChannel.id}, Text: ${targetTextChannel.id}`);
+      logger.info("Stay247Command", `24/7 mode enabled in guild ${guild.id} - Voice: ${targetVoiceChannel.id}, Text: ${targetTextChannel.id}`);
 
-
-      let player   =message.client.music?.getPlayer(guild.id);
-      let connectionMessage   ='';
+      let player = client.music?.getPlayer(guild.id);
+      let connectionStatus = "";
 
       if (!player || !player.voiceChannelId) {
         try {
-          player   =message.client.music.createPlayer({
+          player = client.music.createPlayer({
             guildId: guild.id,
             textChannelId: targetTextChannel.id,
             voiceChannelId: targetVoiceChannel.id,
@@ -135,77 +228,110 @@ export default {
             volume: db.guild.getDefaultVolume(guild.id),
           });
 
-          await player.connect();
-          connectionMessage   ='\n🔗 **Connected to voice channel**';
+          
+          connectionStatus = "Connected to voice channel";
         } catch (connectError) {
-          logger.error('247Command', `Failed to connect to voice channel:`, connectError);
-          connectionMessage   ='\n⚠️ **Failed to connect - will retry automatically**';
+          logger.error("Stay247Command", `Failed to connect to voice channel:`, connectError);
+          connectionStatus = "Failed to connect - will retry automatically";
         }
-      } else if (player.voiceChannelId   !==targetVoiceChannel.id) {
+      } else if (player.voiceChannelId !== targetVoiceChannel.id) {
         try {
           await player.setVoiceChannel(targetVoiceChannel.id);
-          connectionMessage   ='\n🔄 **Moved to new voice channel**';
+          connectionStatus = "Moved to new voice channel";
         } catch (moveError) {
-          logger.error('247Command', `Failed to move to new voice channel:`, moveError);
-          connectionMessage   ='\n⚠️ **Failed to move - will reconnect automatically**';
+          logger.error("Stay247Command", `Failed to move to new voice channel:`, moveError);
+          connectionStatus = "Failed to move - will reconnect automatically";
         }
       }
 
-
-      return message.reply({
-        embeds: [{
-          title: '✅ 24/7 Mode Enabled',
-          description: `📍 **Voice Channel:** ${targetVoiceChannel.name}
-💬 **Text Channel:** ${targetTextChannel.name}
-🔄 **Status:** Bot will stay connected even when queue is empty${connectionMessage}`,
-          color: 0x00ff00,
-          footer: {
-            text: 'The bot will automatically reconnect if disconnected',
-          },
-        }],
-      });
+      return this._createSuccessContainer(
+        "24/7 Mode Enabled",
+        `**${emoji.get('folder')} Configuration**\n` +
+        `├─ **Voice Channel:** ${targetVoiceChannel.name}\n` +
+        `├─ **Text Channel:** ${targetTextChannel.name}\n` +
+        `└─ **Status:** Bot will stay connected even when queue is empty\n\n` +
+        `**${emoji.get('check')} Connection:** ${connectionStatus}`
+      );
     } catch (error) {
-      logger.error('247Command', 'Error enabling 24/7 mode:', error);
-      return message.reply({
-        content: '❌ **Failed to enable 24/7 mode.** Please try again later.',
-      });
+      logger.error("Stay247Command", "Error enabling 24/7 mode:", error);
+      return this._createErrorContainer("Failed to enable 24/7 mode. Please try again later.");
     }
-  },
+  }
 
-  async disable247Mode(message, current247Settings) {
-    const { guild }   =message;
-    const guildId   =guild.id;
+  async _handleDisable247(messageOrInteraction, current247Settings) {
+    const guild = messageOrInteraction.guild;
+    const guildId = guild.id;
 
     if (!current247Settings.enabled) {
-      return message.reply({
-        content: '❌ **24/7 mode is already disabled.**',
-      });
+      return this._createErrorContainer("24/7 mode is already disabled.");
     }
 
     try {
       db.guild.set247Mode(guildId, false);
-      logger.info('247Command', `24/7 mode disabled in guild ${guildId}`);
+      logger.info("Stay247Command", `24/7 mode disabled in guild ${guildId}`);
 
-
-      const player   =message.client.music?.getPlayer(guildId);
-      const disconnectionMessage   ='';
-
-
-      return message.reply({
-        embeds: [{
-          title: '✅ 24/7 Mode Disabled',
-          description: `🔄 **Status:** Bot will disconnect when queue is empty${disconnectionMessage}`,
-          color: 0xff6b6b,
-          footer: {
-            text: 'Use "247 on" to re-enable 24/7 mode',
-          },
-        }],
-      });
+      return this._createSuccessContainer(
+        "24/7 Mode Disabled",
+        `**${emoji.get('cross')} Status:** Bot will disconnect when queue is empty\n\n` +
+        `Use \`247 on\` to re-enable 24/7 mode`
+      );
     } catch (error) {
-      logger.error('247Command', 'Error disabling 24/7 mode:', error);
-      return message.reply({
-        content: '❌ **Failed to disable 24/7 mode.** Please try again later.',
-      });
+      logger.error("Stay247Command", "Error disabling 24/7 mode:", error);
+      return this._createErrorContainer("Failed to disable 24/7 mode. Please try again later.");
     }
-  },
-};
+  }
+
+  _createSuccessContainer(title, description) {
+    const container = new ContainerBuilder();
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get('check')} **${title}**`)
+    );
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    const thumbnailUrl = config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork;
+
+    const section = new SectionBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(description))
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(thumbnailUrl));
+
+    container.addSectionComponents(section);
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    return container;
+  }
+
+  _createErrorContainer(message) {
+    const container = new ContainerBuilder();
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get('cross')} **Error**`)
+    );
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    const thumbnailUrl = config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork;
+
+    const section = new SectionBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(message))
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(thumbnailUrl));
+
+    container.addSectionComponents(section);
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    return container;
+  }
+}
+
+export default new Stay247Command();

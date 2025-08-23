@@ -1,8 +1,7 @@
 import { Command } from "#structures/classes/Command";
 import {
   ContainerBuilder, TextDisplayBuilder, SeparatorBuilder, ActionRowBuilder,
-  ButtonBuilder, StringSelectMenuBuilder, MessageFlags, SeparatorSpacingSize,
-  ButtonStyle, ThumbnailBuilder, SectionBuilder
+  ButtonBuilder, MessageFlags, SeparatorSpacingSize, ButtonStyle, ThumbnailBuilder, SectionBuilder
 } from "discord.js";
 import { db } from "#database/DatabaseManager";
 import { logger } from "#utils/logger";
@@ -45,16 +44,32 @@ class NoPrefixToggleCommand extends Command {
     );
     container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
-    let content = `Hello **${username}**! Your personal No-Prefix mode is currently **${statusText}** ${statusEmoji}.\n\n`;
+    let content = `**Hello ${username}!** Manage your personal no-prefix mode here.\n\n`;
+    
     if (action) {
-      content += `**Action Result:** Your no-prefix mode has been **${action}**!\n\n`;
+      content += `${emoji.get("check")} **Action Result**\nYour no-prefix mode has been **${action}**!\n\n`;
     }
 
+    content += `**${emoji.get("folder")} Current Status:** ${statusText} ${statusEmoji}\n\n`;
+    
+    content += `**${emoji.get("add")} How it works:**\n`;
     if (currentStatus) {
-      content += `**How it works:** You can now use commands without any prefix (e.g., \`ping\`). This setting follows you across all servers where I am present.`;
+      content += `├─ You can use commands without any prefix\n`;
+      content += `├─ Example: Type \`ping\` instead of \`!ping\`\n`;
+      content += `├─ Works in all servers where I am present\n`;
+      content += `└─ This is your personal setting\n\n`;
     } else {
-      content += `**How it works:** You need to use a server's prefix or mention me to run commands (e.g., \`!ping\` or \`@Yukihana help\`).`;
+      content += `├─ You need to use a server's prefix or mention me\n`;
+      content += `├─ Example: Use \`!ping\` or \`@Yukihana ping\`\n`;
+      content += `├─ Enable this to use commands without prefixes\n`;
+      content += `└─ Premium feature for enhanced convenience\n\n`;
     }
+
+    content += `**${emoji.get("reset")} Benefits:**\n`;
+    content += `├─ Faster command usage without typing prefixes\n`;
+    content += `├─ Works across all servers instantly\n`;
+    content += `├─ Toggle on/off anytime you want\n`;
+    content += `└─ Premium exclusive feature`;
 
     const section = new SectionBuilder()
       .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail))
@@ -65,13 +80,15 @@ class NoPrefixToggleCommand extends Command {
 
     const buttons = new ActionRowBuilder().addComponents(
       new ButtonBuilder()
-      .setCustomId("npt_toggle")
-      .setLabel(currentStatus ? "Disable No-Prefix" : "Enable No-Prefix")
-      .setStyle(currentStatus ? ButtonStyle.Danger : ButtonStyle.Success),
+        .setCustomId("npt_toggle")
+        .setLabel(currentStatus ? "Disable No-Prefix" : "Enable No-Prefix")
+        .setStyle(currentStatus ? ButtonStyle.Danger : ButtonStyle.Success)
+        .setEmoji(currentStatus ? emoji.get("cross") : emoji.get("check")),
       new ButtonBuilder()
-      .setCustomId("npt_help")
-      .setLabel("Help & Info")
-      .setStyle(ButtonStyle.Secondary)
+        .setCustomId("npt_help")
+        .setLabel("Help & Info")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji(emoji.get("info"))
     );
     container.addActionRowComponents(buttons);
     return container;
@@ -79,32 +96,58 @@ class NoPrefixToggleCommand extends Command {
 
   _createHelpContainer() {
     const container = new ContainerBuilder();
-    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(`### ${emoji.get('info')} No-Prefix Help`));
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`### ${emoji.get('info')} No-Prefix Help`)
+    );
     container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
-    const content = `**What is No-Prefix Mode?**\nIt allows premium users to use bot commands without typing a prefix. Instead of \`!ping\`, you can just type \`ping\`.\n\n` +
-      `**This is a personal setting** that follows you across all servers and can be toggled at any time.`;
+    const content = `**What is No-Prefix Mode?**\nA premium feature that allows you to use bot commands without typing a prefix.\n\n` +
+      `**${emoji.get('check')} How it works:**\n` +
+      `├─ Instead of \`!ping\`, just type \`ping\`\n` +
+      `├─ Instead of \`!play song\`, just type \`play song\`\n` +
+      `├─ Works in all servers where I am present\n` +
+      `└─ This is your personal setting that follows you\n\n` +
+      `**${emoji.get('folder')} Examples:**\n` +
+      `├─ \`help\` → Shows help menu\n` +
+      `├─ \`play never gonna give you up\` → Plays music\n` +
+      `├─ \`queue\` → Shows music queue\n` +
+      `└─ \`botinfo\` → Shows bot information\n\n` +
+      `**${emoji.get('add')} Benefits:**\n` +
+      `├─ Faster command execution\n` +
+      `├─ More convenient for frequent users\n` +
+      `├─ Toggle on/off anytime\n` +
+      `└─ Premium exclusive feature`;
 
     const section = new SectionBuilder()
       .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail))
       .addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
     container.addSectionComponents(section);
 
+    container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
+
     container.addActionRowComponents(new ActionRowBuilder().addComponents(
-      new ButtonBuilder().setCustomId("npt_back").setLabel("Back to Settings").setStyle(ButtonStyle.Secondary)
+      new ButtonBuilder()
+        .setCustomId("npt_back")
+        .setLabel("Back to Settings")
+        .setStyle(ButtonStyle.Secondary)
+        .setEmoji(emoji.get("reset"))
     ));
     return container;
   }
 
   async _sendError(ctx, message) {
     const container = new ContainerBuilder();
-    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(`### ${emoji.get('cross')} Error`));
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`### ${emoji.get('cross')} Error`)
+    );
     container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
     const section = new SectionBuilder()
       .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail))
       .addTextDisplayComponents(new TextDisplayBuilder().setContent(message));
     container.addSectionComponents(section);
+
+    container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
     await ctx.reply({
       components: [container],
@@ -132,7 +175,7 @@ class NoPrefixToggleCommand extends Command {
         newStatus = false;
         action = "disabled";
       } else {
-        return this._sendError(ctx, `**Invalid option:** \`${arg}\`\n\n**Valid options:** \`on\` or \`off\`.`);
+        return this._sendError(ctx, `**Invalid option:** \`${arg}\`\n\n**Valid options:**\n├─ \`on\` or \`enable\` - Enable no-prefix mode\n└─ \`off\` or \`disable\` - Disable no-prefix mode`);
       }
       db.setNoPrefix(userId, newStatus, null);
     }
@@ -181,25 +224,25 @@ class NoPrefixToggleCommand extends Command {
     });
 
     collector.on("end", async () => {
-        try {
-            const fetchedMessage = await message.fetch().catch(() => null);
-            if (fetchedMessage?.components.length > 0) {
-                const disabledComponents = fetchedMessage.components.map(row => {
-                    const newRow = ActionRowBuilder.from(row);
-                    newRow.components.forEach(component => {
-                        if (component.data.style !== ButtonStyle.Link) {
-                            component.setDisabled(true);
-                        }
-                    });
-                    return newRow;
-                });
-                await fetchedMessage.edit({ components: disabledComponents });
-            }
-        } catch (error) {
-            if (error.code !== 10008) {
-                logger.error("NoPrefixToggle", "Failed to disable components on end:", error);
-            }
+      try {
+        const fetchedMessage = await message.fetch().catch(() => null);
+        if (fetchedMessage?.components.length > 0) {
+          const disabledComponents = fetchedMessage.components.map(row => {
+            const newRow = ActionRowBuilder.from(row);
+            newRow.components.forEach(component => {
+              if (component.data.style !== ButtonStyle.Link) {
+                component.setDisabled(true);
+              }
+            });
+            return newRow;
+          });
+          await fetchedMessage.edit({ components: disabledComponents });
         }
+      } catch (error) {
+        if (error.code !== 10008) {
+          logger.error("NoPrefixToggle", "Failed to disable components on end:", error);
+        }
+      }
     });
   }
 

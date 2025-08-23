@@ -234,7 +234,7 @@ export class AntiAbuse extends Database {
       if (messageOrInteraction.reply) {
         messageOrInteraction.reply(payload);
       } else if (messageOrInteraction.followUp) {
-        messageOrInteraction.followUp(payload);
+        messageOrInteraction.reply(payload);
       }
     } catch (error) {
       logger.error("AntiAbuse", `Failed to send cooldown notification`, error);

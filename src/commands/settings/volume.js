@@ -14,6 +14,7 @@ import {
 } from "discord.js";
 import { db } from "#database/DatabaseManager";
 import { config } from "#config/config";
+import emoji from "#config/emoji";
 import { logger } from "#utils/logger";
 
 class SetDefaultVolumeCommand extends Command {
@@ -49,50 +50,49 @@ class SetDefaultVolumeCommand extends Command {
   }
 
   async execute({ message, args }) {
-    const volume   =args[0] ? parseInt(args[0]) : null;
+    const volume = args[0] ? parseInt(args[0]) : null;
     await this._handleCommand(message, volume);
   }
 
   async slashExecute({ interaction }) {
-    const volume   =interaction.options.getInteger("volume");
+    const volume = interaction.options.getInteger("volume");
     await this._handleCommand(interaction, volume);
   }
 
   async _handleCommand(ctx, volume) {
-    const isInteraction   =!!ctx.user;
-    const guild   =ctx.guild;
-    const user   =isInteraction ? ctx.user : ctx.author;
+    const isInteraction = !!ctx.user;
+    const user = isInteraction ? ctx.user : ctx.author;
 
     if (!ctx.member.permissions.has(PermissionFlagsBits.Administrator) && !config.ownerIds.includes(user.id)) {
       return this._sendError(ctx, "Permission Denied", "Only server administrators can change the default volume setting.");
     }
 
-    if (volume   !==null) {
+    if (volume !== null) {
       if (isNaN(volume) || volume < 1 || volume > 100) {
         return this._sendError(ctx, "Invalid Volume", "Volume must be a number between 1 and 100.");
       }
-
-      await this._setDefaultVolume(ctx, volume, isInteraction);
+      await this._setDefaultVolume(ctx, volume);
     } else {
-      await this._showVolumeSettings(ctx, isInteraction);
+      await this._showVolumeSettings(ctx);
     }
   }
 
-  async _setDefaultVolume(ctx, volume, isInteraction) {
+  async _setDefaultVolume(ctx, volume) {
     try {
       db.guild.setDefaultVolume(ctx.guild.id, volume);
 
-      const container   =this._createSuccessContainer(
+      const container = this._createSuccessContainer(
         "Default Volume Updated",
         `The default volume for new music players has been set to **${volume}%**.\n\nThis will apply to all new music sessions started in this server.`,
         volume
       );
 
-      const replyOptions   ={
+      const replyOptions = {
         components: [container],
         flags: MessageFlags.IsComponentsV2
       };
 
+      const isInteraction = !!ctx.user;
       if (isInteraction) {
         await ctx.reply(replyOptions);
       } else {
@@ -104,28 +104,36 @@ class SetDefaultVolumeCommand extends Command {
     }
   }
 
-  async _showVolumeSettings(ctx, isInteraction) {
+  async _showVolumeSettings(ctx) {
     try {
-      const currentVolume   =db.guild.getDefaultVolume(ctx.guild.id);
-
-      const container   =new ContainerBuilder();
+      const currentVolume = db.guild.getDefaultVolume(ctx.guild.id);
+      const container = new ContainerBuilder();
+      
       container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`### Default Volume Settings`)
+        new TextDisplayBuilder().setContent(`${emoji.get("info")} **Default Volume Settings**`)
       );
+      
       container.addSeparatorComponents(
         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
       );
 
-      const section   =new SectionBuilder()
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(`**Current Default Volume:** ${currentVolume}%`),
-          new TextDisplayBuilder().setContent(`\nThis volume will be used when new music players are created in this server.\n\nTo change it, use the command with a new volume level.\nExample: \`setdefaultvolume 75\` or \`/setdefaultvolume volume:75\``)
-        )
-        .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail));
+      const content = `**${emoji.get("check")} Current Default Volume:** ${currentVolume}%\n\n` +
+        `This volume will be used when new music players are created in this server.\n\n` +
+        `**${emoji.get("folder")} Usage Examples:**\n` +
+        `├─ \`setdefaultvolume 75\`\n` +
+        `└─ \`/setdefaultvolume volume:75\``;
+
+      const section = new SectionBuilder()
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+        .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork));
 
       container.addSectionComponents(section);
 
-      const quickVolumeRow   =new ActionRowBuilder()
+      container.addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      );
+
+      const quickVolumeRow = new ActionRowBuilder()
         .addComponents(
           new ButtonBuilder()
             .setCustomId('volume_25')
@@ -147,7 +155,8 @@ class SetDefaultVolumeCommand extends Command {
 
       container.addActionRowComponents(quickVolumeRow);
 
-      const reply   =await (isInteraction ?
+      const isInteraction = !!ctx.user;
+      const reply = await (isInteraction ?
         ctx.reply({
           components: [container],
           fetchReply: true,
@@ -167,22 +176,21 @@ class SetDefaultVolumeCommand extends Command {
   }
 
   _setupVolumeCollector(message, userId) {
-    const collector   =message.createMessageComponentCollector({
-      filter: (i)   => i.user.id   ===userId,
+    const collector = message.createMessageComponentCollector({
+      filter: (i) => i.user.id === userId,
       time: 300_000,
     });
 
-    collector.on('collect', async (interaction)   => {
+    collector.on('collect', async (interaction) => {
       if (interaction.customId.startsWith('volume_')) {
-        const volume   =parseInt(interaction.customId.split('_')[1]);
+        const volume = parseInt(interaction.customId.split('_')[1]);
 
         try {
           await interaction.deferUpdate();
-
           db.guild.setDefaultVolume(message.guild.id, volume);
 
-          const newVolume   =db.guild.getDefaultVolume(message.guild.id);
-          const container   =this._createSuccessContainer(
+          const newVolume = db.guild.getDefaultVolume(message.guild.id);
+          const container = this._createSuccessContainer(
             "Default Volume Updated",
             `The default volume for new music players has been set to **${newVolume}%**.\n\nThis will apply to all new music sessions started in this server.`,
             newVolume
@@ -194,33 +202,23 @@ class SetDefaultVolumeCommand extends Command {
         } catch (error) {
           logger.error("SetDefaultVolume", "Error updating volume:", error);
           await interaction.followUp({
-            content: "❌ Failed to update the default volume. Please try again.",
+            content: `${emoji.get("cross")} Failed to update the default volume. Please try again.`,
             ephemeral: true
           });
         }
       }
     });
 
-    collector.on('end', async ()   => {
+    collector.on('end', async () => {
       try {
-        const fetchedMessage   =await message.fetch().catch(()   => null);
-        if (fetchedMessage && fetchedMessage.components.length > 0) {
-          const disabledComponents   =fetchedMessage.components.map(row   => {
-            const newRow   =new ActionRowBuilder();
-            row.components.forEach(comp   => {
-              if (comp.type   ===2) {
-                const newComp   =ButtonBuilder.from(comp).setDisabled(true);
-                newRow.addComponents(newComp);
-              }
-            });
-            return newRow;
-          });
+        const fetchedMessage = await message.fetch().catch(() => null);
+        if (fetchedMessage?.components.length > 0) {
           await fetchedMessage.edit({
-            components: disabledComponents
+            components: [this._createExpiredContainer()]
           });
         }
       } catch (error) {
-        if (error.code   !==10008) {
+        if (error.code !== 10008) {
           logger.error("SetDefaultVolume", "Failed to disable volume components:", error);
         }
       }
@@ -228,67 +226,118 @@ class SetDefaultVolumeCommand extends Command {
   }
 
   _createSuccessContainer(title, description, volume) {
-    const container   =new ContainerBuilder();
+    const container = new ContainerBuilder();
+    
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`### ${title}`)
+      new TextDisplayBuilder().setContent(`${emoji.get("check")} **${title}**`)
     );
+    
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
     );
 
-    const volumeIndicator   =this._getVolumeIndicator(volume);
-    const fullDescription   =`${description}\n\n${volumeIndicator}`;
+    const volumeIndicator = this._getVolumeIndicator(volume);
+    const fullDescription = `${description}\n\n${volumeIndicator}`;
 
-    const section   =new SectionBuilder()
+    const section = new SectionBuilder()
       .addTextDisplayComponents(new TextDisplayBuilder().setContent(fullDescription))
-      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail));
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork));
 
     container.addSectionComponents(section);
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
     return container;
   }
 
   _getVolumeIndicator(volume) {
-    const barLength   =20;
-    const filledBars   =Math.round((volume / 100) * barLength);
-    const emptyBars   =barLength - filledBars;
+    const barLength = 20;
+    const filledBars = Math.round((volume / 100) * barLength);
+    const emptyBars = barLength - filledBars;
+    const volumeBar = '█'.repeat(filledBars) + '░'.repeat(emptyBars);
 
-    const volumeBar   ='█'.repeat(filledBars) + '░'.repeat(emptyBars);
+    let volumeLevel = "";
+    if (volume <= 25) volumeLevel = `${emoji.get("folder")} Low`;
+    else if (volume <= 50) volumeLevel = `${emoji.get("info")} Medium`;
+    else if (volume <= 75) volumeLevel = `${emoji.get("check")} High`;
+    else volumeLevel = `${emoji.get("add")} Maximum`;
 
-    let volumeLevel   ="";
-    if (volume <= 25) volumeLevel   ="🔈 Low";
-    else if (volume <= 50) volumeLevel   ="🔉 Medium";
-    else if (volume <= 75) volumeLevel   ="🔊 High";
-    else volumeLevel   ="📢 Maximum";
-
-    return `**Volume Level:** ${volumeLevel}\n\`${volumeBar}\` ${volume}%`;
+    return `**${emoji.get("add")} Volume Level:** ${volumeLevel}\n\`${volumeBar}\` ${volume}%`;
   }
 
-  async _sendError(ctx, title, description) {
-    const isInteraction   =!!ctx.user;
-    const container   =new ContainerBuilder();
-    container.addTextDisplayComponents(new TextDisplayBuilder().setContent(`### ${title}`));
-    container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
+  _createExpiredContainer() {
+    const container = new ContainerBuilder();
 
-    const section   =new SectionBuilder()
-      .addTextDisplayComponents(new TextDisplayBuilder().setContent(description))
-      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail));
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get("info")} **Default Volume Settings**`)
+    );
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    const content = `**This interaction has expired**\n\n` +
+      `Run the command again to manage volume settings\n\n` +
+      `**${emoji.get("folder")} Available Commands:**\n` +
+      `├─ \`setdefaultvolume\`\n` +
+      `├─ \`defaultvolume\`\n` +
+      `└─ \`setdefvol\``;
+
+    const section = new SectionBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork));
 
     container.addSectionComponents(section);
 
-    const replyOptions   ={
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    return container;
+  }
+
+  async _sendError(ctx, title, description) {
+    const container = new ContainerBuilder();
+    
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get("cross")} **${title}**`)
+    );
+    
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    const section = new SectionBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(description))
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork));
+
+    container.addSectionComponents(section);
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    const replyOptions = {
       components: [container],
       ephemeral: true,
       flags: MessageFlags.IsComponentsV2
     };
 
-    if (isInteraction) {
-      if (ctx.deferred || ctx.replied) {
-        await ctx.editReply(replyOptions);
+    const isInteraction = !!ctx.user;
+    try {
+      if (isInteraction) {
+        if (ctx.deferred || ctx.replied) {
+          await ctx.editReply(replyOptions);
+        } else {
+          await ctx.reply(replyOptions);
+        }
       } else {
-        await ctx.reply(replyOptions);
+        await ctx.channel.send(replyOptions);
       }
-    } else {
-      await ctx.channel.send(replyOptions);
+    } catch (error) {
+      logger.error("SetDefaultVolume", "Failed to send error message:", error);
     }
   }
 }

@@ -22,14 +22,11 @@ class PingCommand extends Command {
 			usage: "ping",
 			aliases: ["latency", "lag", "ms"],
 			category: "info",
-			examples: [
-				"ping",
-				"latency"
-			],
+			examples: ["ping", "latency"],
 			cooldown: 15,
 			enabledSlash: true,
 			slashData: {
-				name: ["yuki","ping"],
+				name: "ping",
 				description: "Check bot latency and connection status",
 			},
 		});
@@ -94,125 +91,99 @@ class PingCommand extends Command {
 	}
 
 	_createLoadingContainer() {
-		try {
-			const container = new ContainerBuilder();
+		const container = new ContainerBuilder();
 
-			container.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(`### ${emoji.get("info")} Checking Latency`)
-			);
+		container.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(`${emoji.get("info")} **Checking Latency**`)
+		);
 
-			container.addSeparatorComponents(
-				new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
-			);
+		container.addSeparatorComponents(
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+		);
 
-			const section = new SectionBuilder()
-				.addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(`Calculating ping...`)
-				)
-				.setThumbnailAccessory(
-					new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork)
-				);
+		const content = `Calculating ping...`;
 
-			container.addSectionComponents(section);
+		const section = new SectionBuilder()
+			.addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+			.setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork));
 
-			container.addSeparatorComponents(
-				new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
-			);
+		container.addSectionComponents(section);
 
-			return container;
-		} catch (error) {
-			return this._createErrorContainer("Unable to load ping information.");
-		}
+		container.addSeparatorComponents(
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+		);
+
+		return container;
 	}
 
 	_createPingContainer(client, messageLatency) {
-		try {
-			const container = new ContainerBuilder();
+		const container = new ContainerBuilder();
 
-			container.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(`### ${emoji.get("check")} Pong!`)
-			);
+		container.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(`${emoji.get("check")} **Pong!**`)
+		);
 
-			container.addSeparatorComponents(
-				new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
-			);
+		container.addSeparatorComponents(
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+		);
 
-			const wsLatency = client.ws.ping;
-			const uptime = this._formatUptime(client.uptime);
+		const wsLatency = client.ws.ping;
+		const uptime = this._formatUptime(client.uptime);
 
-			let content = `**Latency Information:**\n`;
-			content += `├─ **WebSocket Ping:** ${wsLatency}ms\n`;
-			content += `├─ **Message Latency:** ${messageLatency}ms\n`;
-			content += `└─ **Total Response:** ${wsLatency + messageLatency}ms\n\n`;
-			content += `**Bot Statistics:**\n`;
-			content += `├─ **Uptime:** ${uptime}\n`;
-			content += `├─ **Guilds:** ${client.guilds.cache.size}\n`;
-			content += `└─ **Users:** ${client.users.cache.size}`;
+		const content = `**Latency Information:**\n` +
+			`├─ **WebSocket Ping:** ${wsLatency}ms\n` +
+			`├─ **Message Latency:** ${messageLatency}ms\n` +
+			`└─ **Total Response:** ${wsLatency + messageLatency}ms\n\n` +
+			`**Bot Statistics:**\n` +
+			`├─ **Uptime:** ${uptime}\n` +
+			`├─ **Guilds:** ${client.guilds.cache.size}\n` +
+			`└─ **Users:** ${client.users.cache.size}`;
 
-			const section = new SectionBuilder()
-				.addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(content)
-				)
-				.setThumbnailAccessory(
-					new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork)
-				);
+		const section = new SectionBuilder()
+			.addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+			.setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork));
 
-			container.addSectionComponents(section);
+		container.addSectionComponents(section);
 
-			container.addSeparatorComponents(
-				new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
-			);
+		container.addSeparatorComponents(
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+		);
 
-			const buttonRow = new ActionRowBuilder().addComponents(
-				new ButtonBuilder()
-					.setCustomId('ping_refresh')
-					.setLabel('Refresh')
-					.setStyle(ButtonStyle.Secondary)
-					.setEmoji(emoji.get("reset"))
-			);
+		const buttonRow = new ActionRowBuilder().addComponents(
+			new ButtonBuilder()
+				.setCustomId('ping_refresh')
+				.setLabel('Refresh')
+				.setStyle(ButtonStyle.Secondary)
+				.setEmoji(emoji.get("reset"))
+		);
 
-			container.addActionRowComponents(buttonRow);
+		container.addActionRowComponents(buttonRow);
 
-			return container;
-		} catch (error) {
-			return this._createErrorContainer("Unable to create ping display.");
-		}
+		return container;
 	}
 
 	_createErrorContainer(message) {
-		try {
-			const container = new ContainerBuilder();
+		const container = new ContainerBuilder();
 
-			container.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(`### ${emoji.get("cross")} Error`)
-			);
+		container.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(`${emoji.get("cross")} **Error**`)
+		);
 
-			container.addSeparatorComponents(
-				new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
-			);
+		container.addSeparatorComponents(
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+		);
 
-			const section = new SectionBuilder()
-				.addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(message)
-				)
-				.setThumbnailAccessory(
-					new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork)
-				);
+		const section = new SectionBuilder()
+			.addTextDisplayComponents(new TextDisplayBuilder().setContent(message))
+			.setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork));
 
-			container.addSectionComponents(section);
+		container.addSectionComponents(section);
 
-			container.addSeparatorComponents(
-				new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
-			);
+		container.addSeparatorComponents(
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+		);
 
-			return container;
-		} catch (error) {
-			const fallbackContainer = new ContainerBuilder();
-			fallbackContainer.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(`${emoji.get("cross")} ${message}`)
-			);
-			return fallbackContainer;
-		}
+		return container;
 	}
 
 	_formatUptime(ms) {
@@ -260,23 +231,53 @@ class PingCommand extends Command {
 			try {
 				const fetchedMessage = await message.fetch().catch(() => null);
 				if (fetchedMessage?.components.length > 0) {
-					const disabledComponents = fetchedMessage.components.map((row) => {
-						const newRow = ActionRowBuilder.from(row);
-						newRow.components.forEach((component) => {
-							if (component.data.style !== ButtonStyle.Link) {
-								component.setDisabled(true);
-							}
-						});
-						return newRow;
+					await fetchedMessage.edit({
+						components: [this._createDisabledContainer(client)]
 					});
-					await fetchedMessage.edit({ components: disabledComponents });
 				}
 			} catch (error) {
 				if (error.code !== 10008) {
-					client.logger?.error("PingCommand", `Error disabling components: ${error.message}`, error);
+					client.logger?.error("PingCommand", `Error updating expired components: ${error.message}`, error);
 				}
 			}
 		});
+	}
+
+	_createDisabledContainer(client) {
+		const container = new ContainerBuilder();
+
+		container.addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(`${emoji.get("check")} **Pong!**`)
+		);
+
+		container.addSeparatorComponents(
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+		);
+
+		const wsLatency = client.ws.ping;
+		const uptime = this._formatUptime(client.uptime);
+
+		const content = `**Latency Information:**\n` +
+			`├─ **WebSocket Ping:** ${wsLatency}ms\n` +
+			`├─ **Message Latency:** Expired\n` +
+			`└─ **Total Response:** ${wsLatency}ms\n\n` +
+			`**Bot Statistics:**\n` +
+			`├─ **Uptime:** ${uptime}\n` +
+			`├─ **Guilds:** ${client.guilds.cache.size}\n` +
+			`└─ **Users:** ${client.users.cache.size}\n\n` +
+			`*This command has expired. Run the command again to refresh.*`;
+
+		const section = new SectionBuilder()
+			.addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+			.setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork));
+
+		container.addSectionComponents(section);
+
+		container.addSeparatorComponents(
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+		);
+
+		return container;
 	}
 }
 

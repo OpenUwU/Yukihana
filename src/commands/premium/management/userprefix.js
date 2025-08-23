@@ -54,33 +54,47 @@ class UserPrefixCommand extends Command {
     const container = new ContainerBuilder();
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(
-        `### ${emoji.get("info")} Personal Prefix Management`,
-      ),
+      new TextDisplayBuilder().setContent(`### ${emoji.get("info")} Personal Prefix Management`)
     );
 
     container.addSeparatorComponents(
-      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
     );
 
-    const prefixList =
-      prefixes.length > 0
-        ? prefixes.map((p) => `\`${p}\``).join(" ")
-        : `${emoji.get("cross")} You have no custom prefixes.`;
+    let content = `**Hello ${username}!** Manage your personal command prefixes here.\n\n`;
+    
+    if (actionMessage) {
+      content += `${actionMessage}\n\n`;
+    }
 
-    let content = actionMessage ? `${actionMessage}\n\n` : "";
-    content += `${emoji.get("check")} **Your Prefixes (${prefixes.length}/${USER_PREFIX_LIMIT}):**\n${prefixList}\n\n${emoji.get("info")} *These prefixes work for you in any server I'm in.*`;
+    content += `**${emoji.get("folder")} Your Prefixes (${prefixes.length}/${USER_PREFIX_LIMIT}):**\n`;
+    if (prefixes.length > 0) {
+      prefixes.forEach((prefix, index) => {
+        const isLast = index === prefixes.length - 1;
+        content += `${isLast ? '└─' : '├─'} \`${prefix}\`\n`;
+      });
+    } else {
+      content += `└─ ${emoji.get("cross")} No custom prefixes set\n`;
+    }
+
+    content += `\n**${emoji.get("check")} How it works:**\n`;
+    content += `├─ These prefixes work for you in any server where I am present\n`;
+    content += `├─ Use them instead of the server's default prefix\n`;
+    content += `└─ Maximum ${USER_PREFIX_LIMIT} prefixes allowed per user\n\n`;
+    
+    content += `**${emoji.get("add")} Examples:**\n`;
+    content += `├─ Add \`!\` as prefix → Use \`!play song\` anywhere\n`;
+    content += `├─ Add \`.\` as prefix → Use \`.help\` anywhere\n`;
+    content += `└─ Add \`y!\` as prefix → Use \`y!queue\` anywhere`;
 
     const section = new SectionBuilder()
-      .setThumbnailAccessory(
-        new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
-      )
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail))
       .addTextDisplayComponents(new TextDisplayBuilder().setContent(content));
 
     container.addSectionComponents(section);
 
     container.addSeparatorComponents(
-      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
     );
 
     container.addActionRowComponents(
@@ -96,8 +110,8 @@ class UserPrefixCommand extends Command {
           .setLabel("Remove All")
           .setStyle(ButtonStyle.Secondary)
           .setEmoji(emoji.get("reset"))
-          .setDisabled(prefixes.length === 0),
-      ),
+          .setDisabled(prefixes.length === 0)
+      )
     );
 
     if (prefixes.length > 0) {
@@ -112,10 +126,10 @@ class UserPrefixCommand extends Command {
               prefixes.map((p) => ({
                 label: `Remove prefix: "${p}"`,
                 value: p,
-                emoji: "🗑️",
-              })),
-            ),
-        ),
+                emoji: emoji.get("cross"),
+              }))
+            )
+        )
       );
     }
 
@@ -128,23 +142,21 @@ class UserPrefixCommand extends Command {
     const title = isSuccess ? "Success" : "Error";
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`### ${e} ${title}`),
+      new TextDisplayBuilder().setContent(`### ${e} ${title}`)
     );
 
     container.addSeparatorComponents(
-      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
     );
 
     const section = new SectionBuilder()
-      .setThumbnailAccessory(
-        new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
-      )
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail))
       .addTextDisplayComponents(new TextDisplayBuilder().setContent(message));
 
     container.addSectionComponents(section);
 
     container.addSeparatorComponents(
-      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
     );
 
     await ctx.reply({
@@ -158,7 +170,7 @@ class UserPrefixCommand extends Command {
     if (!newPrefix || newPrefix.trim() === "") {
       return {
         success: false,
-        message: `${emoji.get("cross")} **Invalid Input**\nPlease provide a valid prefix.`,
+        message: `${emoji.get("cross")} **Invalid Input**\n\nPlease provide a valid prefix to add.`,
       };
     }
 
@@ -167,7 +179,7 @@ class UserPrefixCommand extends Command {
     if (trimmedPrefix.length > 5) {
       return {
         success: false,
-        message: `${emoji.get("cross")} **Prefix Too Long**\nMaximum 5 characters allowed.`,
+        message: `${emoji.get("cross")} **Prefix Too Long**\n\nMaximum 5 characters allowed per prefix.`,
       };
     }
 
@@ -176,14 +188,14 @@ class UserPrefixCommand extends Command {
     if (currentPrefixes.length >= USER_PREFIX_LIMIT) {
       return {
         success: false,
-        message: `${emoji.get("cross")} **Limit Reached**\nYou can only have ${USER_PREFIX_LIMIT} custom prefixes.\n${emoji.get("info")} Remove some existing prefixes first.`,
+        message: `${emoji.get("cross")} **Limit Reached**\n\nYou can only have ${USER_PREFIX_LIMIT} custom prefixes. Remove some existing prefixes first.`,
       };
     }
 
     if (currentPrefixes.includes(trimmedPrefix)) {
       return {
         success: false,
-        message: `${emoji.get("cross")} **Prefix Already Exists**\nThe prefix \`${trimmedPrefix}\` is already in your list.`,
+        message: `${emoji.get("cross")} **Prefix Already Exists**\n\nThe prefix \`${trimmedPrefix}\` is already in your list.`,
       };
     }
 
@@ -192,7 +204,7 @@ class UserPrefixCommand extends Command {
 
     return {
       success: true,
-      message: `${emoji.get("check")} **Successfully added prefix:** \`${trimmedPrefix}\``,
+      message: `${emoji.get("check")} **Successfully Added Prefix**\n\nPrefix \`${trimmedPrefix}\` has been added to your personal prefixes.`,
       prefixes: newPrefixes,
     };
   }
@@ -210,22 +222,12 @@ class UserPrefixCommand extends Command {
 
     const message = await (isInteraction
       ? ctx.reply({
-          components: [
-            this._buildUIManagementContainer(
-              username,
-              db.getUserPrefixes(userId),
-            ),
-          ],
+          components: [this._buildUIManagementContainer(username, db.getUserPrefixes(userId))],
           flags: MessageFlags.IsComponentsV2,
           fetchReply: true,
         })
       : ctx.channel.send({
-          components: [
-            this._buildUIManagementContainer(
-              username,
-              db.getUserPrefixes(userId),
-            ),
-          ],
+          components: [this._buildUIManagementContainer(username, db.getUserPrefixes(userId))],
           flags: MessageFlags.IsComponentsV2,
           fetchReply: true,
         }));
@@ -238,10 +240,7 @@ class UserPrefixCommand extends Command {
   }
 
   async slashExecute({ interaction }) {
-    await this._handleCommand(
-      interaction,
-      interaction.options.getString("add"),
-    );
+    await this._handleCommand(interaction, interaction.options.getString("add"));
   }
 
   _setupCollector(message, userId, username) {
@@ -267,18 +266,15 @@ class UserPrefixCommand extends Command {
                   .setStyle(TextInputStyle.Short)
                   .setRequired(true)
                   .setMaxLength(5)
-                  .setPlaceholder("Enter your custom prefix..."),
-              ),
+                  .setPlaceholder("Enter your custom prefix...")
+              )
             );
 
           await interaction.showModal(modal);
 
           try {
-            const modalSubmit = await interaction.awaitModalSubmit({
-              time: 60000,
-            });
-            const newPrefix =
-              modalSubmit.fields.getTextInputValue("new_prefix_input");
+            const modalSubmit = await interaction.awaitModalSubmit({ time: 60000 });
+            const newPrefix = modalSubmit.fields.getTextInputValue("new_prefix_input");
             const result = await this._addPrefix(userId, newPrefix);
 
             prefixes = db.getUserPrefixes(userId);
@@ -286,13 +282,7 @@ class UserPrefixCommand extends Command {
 
             await modalSubmit.deferUpdate();
             await interaction.editReply({
-              components: [
-                this._buildUIManagementContainer(
-                  username,
-                  prefixes,
-                  actionMessage,
-                ),
-              ],
+              components: [this._buildUIManagementContainer(username, prefixes, actionMessage)],
             });
           } catch (error) {
             return;
@@ -301,36 +291,22 @@ class UserPrefixCommand extends Command {
           await interaction.deferUpdate();
           db.setUserPrefixes(userId, []);
           prefixes = [];
-          actionMessage = `${emoji.get("check")} **All custom prefixes removed successfully!**`;
+          actionMessage = `${emoji.get("check")} **All Prefixes Removed**\n\nAll custom prefixes have been successfully removed from your account.`;
+          
           await interaction.editReply({
-            components: [
-              this._buildUIManagementContainer(
-                username,
-                prefixes,
-                actionMessage,
-              ),
-            ],
+            components: [this._buildUIManagementContainer(username, prefixes, actionMessage)],
           });
-        } else if (
-          interaction.isStringSelectMenu() &&
-          interaction.customId === "up_remove_select"
-        ) {
+        } else if (interaction.isStringSelectMenu() && interaction.customId === "up_remove_select") {
           await interaction.deferUpdate();
           const valuesToRemove = interaction.values;
           prefixes = prefixes.filter((p) => !valuesToRemove.includes(p));
           db.setUserPrefixes(userId, prefixes);
 
           const removedList = valuesToRemove.map((p) => `\`${p}\``).join(", ");
-          actionMessage = `${emoji.get("check")} **Removed prefixes:** ${removedList}`;
+          actionMessage = `${emoji.get("check")} **Prefixes Removed**\n\nSuccessfully removed: ${removedList}`;
 
           await interaction.editReply({
-            components: [
-              this._buildUIManagementContainer(
-                username,
-                prefixes,
-                actionMessage,
-              ),
-            ],
+            components: [this._buildUIManagementContainer(username, prefixes, actionMessage)],
           });
         }
       } catch (error) {
@@ -355,11 +331,7 @@ class UserPrefixCommand extends Command {
         }
       } catch (error) {
         if (error.code !== 10008) {
-          logger.error(
-            "UserPrefix",
-            "Failed to disable components on end:",
-            error,
-          );
+          logger.error("UserPrefix", "Failed to disable components on end:", error);
         }
       }
     });

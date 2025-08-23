@@ -1,4 +1,13 @@
 import { Database } from "#structures/classes/Database";
+import { 
+  ContainerBuilder, 
+  MessageFlags, 
+  SectionBuilder, 
+  SeparatorBuilder, 
+  SeparatorSpacingSize, 
+  TextDisplayBuilder, 
+  ThumbnailBuilder 
+} from "discord.js";
 import { config } from "#config/config";
 import { db } from "#database/DatabaseManager";
 import { logger } from "#utils/logger";
@@ -13,11 +22,9 @@ export class AntiAbuse extends Database {
   }
 
   initTable() {
-
     this.exec("DROP TABLE IF EXISTS cooldowns");
     this.exec("DROP TABLE IF EXISTS mention_limits");
 
-    
     this.exec(`
       CREATE TABLE IF NOT EXISTS cooldowns (
         user_id TEXT NOT NULL,
@@ -50,7 +57,7 @@ export class AntiAbuse extends Database {
     );
   }
 
-  checkCooldown(userId, command,message) {
+  checkCooldown(userId, command, messageOrInteraction) {
     const commandName = command.name;
     const baseCooldown = command.cooldown || 3;
     const hasPremium = db.hasAnyPremium(userId, null);
@@ -62,7 +69,7 @@ export class AntiAbuse extends Database {
     if (data && data.last_used) {
       const timeLeft = data.last_used + cooldownMs - Date.now();
       if (timeLeft > 0) {
-        this.handleCooldownViolation(userId, commandName,message);
+        this.handleCooldownViolation(userId, commandName, messageOrInteraction);
         return (timeLeft / 1000).toFixed(1);
       }
     }
@@ -89,7 +96,7 @@ export class AntiAbuse extends Database {
     }
   }
 
-  handleCooldownViolation(userId, commandName,message) {
+  handleCooldownViolation(userId, commandName, messageOrInteraction) {
     const now = Date.now();
     const data = this.getCooldownData(userId, commandName);
 
@@ -113,31 +120,19 @@ export class AntiAbuse extends Database {
     );
 
     if (violations.length >= 3) {
-      this.blacklistUser(userId,message);
+      this.blacklistUser(userId, messageOrInteraction);
     }
   }
 
-  blacklistUser(userId,message) {
+  blacklistUser(userId, messageOrInteraction) {
     try {
       db.blacklistUser(
         userId,
         "Automated: Excessive cooldown violations (Anti-abuse system)",
       );
 
-    
-      
-      if (message) {
-        try {
-          message.reply(
-            `:- ${emoji.get("cross")} **You have been automatically blacklisted**\n\nYou have been automatically blacklisted for excessive cooldown violations. If you believe this is a mistake, please contact support.`,
-          );
-        } catch (e) {
-          logger.error(
-            "AntiAbuse",
-            `Failed to send blacklist notification to user ${userId}`,
-            e,
-          );
-        }
+      if (messageOrInteraction) {
+        this._sendBlacklistNotification(messageOrInteraction);
       }
 
       logger.warn(
@@ -146,6 +141,103 @@ export class AntiAbuse extends Database {
       );
     } catch (error) {
       logger.error("AntiAbuse", `Failed to blacklist user ${userId}`, error);
+    }
+  }
+
+  _sendBlacklistNotification(messageOrInteraction) {
+    try {
+      const container = new ContainerBuilder();
+
+      container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`${emoji.get('cross')} **Automatically Blacklisted**`)
+      );
+
+      container.addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      );
+
+      const content = `**${emoji.get('folder')} Anti-Abuse System**\n` +
+        `├─ **Reason:** Excessive cooldown violations\n` +
+        `├─ **Status:** Account access suspended\n` +
+        `└─ **Appeal:** Contact support if this is a mistake\n\n` +
+        `**${emoji.get('reset')} What happened?**\n` +
+        `└─ You triggered cooldown violations too frequently`;
+
+      const thumbnailUrl = config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork;
+
+      const section = new SectionBuilder()
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+        .setThumbnailAccessory(new ThumbnailBuilder().setURL(thumbnailUrl));
+
+      container.addSectionComponents(section);
+
+      container.addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      );
+
+      const payload = {
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
+      };
+
+      if (messageOrInteraction.reply) {
+        messageOrInteraction.reply(payload);
+      } else if (messageOrInteraction.editReply) {
+        messageOrInteraction.editReply(payload);
+      }
+    } catch (e) {
+      logger.error(
+        "AntiAbuse",
+        `Failed to send blacklist notification to user`,
+        e,
+      );
+    }
+  }
+
+  sendCooldownNotification(messageOrInteraction, timeLeft, commandName) {
+    try {
+      const container = new ContainerBuilder();
+
+      container.addTextDisplayComponents(
+        new TextDisplayBuilder().setContent(`${emoji.get('cross')} **Command on Cooldown**`)
+      );
+
+      container.addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      );
+
+      const content = `**${emoji.get('folder')} Cooldown Information**\n` +
+        `├─ **Command:** ${commandName}\n` +
+        `├─ **Time Remaining:** ${timeLeft}s\n` +
+        `└─ **Status:** Please wait before using this command again\n\n` +
+        `**${emoji.get('add')} Pro Tip**\n` +
+        `└─ Premium users get 50% reduced cooldowns`;
+
+      const thumbnailUrl = config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork;
+
+      const section = new SectionBuilder()
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+        .setThumbnailAccessory(new ThumbnailBuilder().setURL(thumbnailUrl));
+
+      container.addSectionComponents(section);
+
+      container.addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      );
+
+      const payload = {
+        components: [container],
+        flags: MessageFlags.IsComponentsV2,
+        ephemeral: true,
+      };
+
+      if (messageOrInteraction.reply) {
+        messageOrInteraction.reply(payload);
+      } else if (messageOrInteraction.followUp) {
+        messageOrInteraction.followUp(payload);
+      }
+    } catch (error) {
+      logger.error("AntiAbuse", `Failed to send cooldown notification`, error);
     }
   }
 

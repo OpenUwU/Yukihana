@@ -76,9 +76,9 @@ class TermsOfServiceCommand extends Command {
 			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
 		);
 
-		const content = `**By using Yukihana, you agree to these terms:**\n\n` +
+		const content = `**By using Yukihana, you agree to these terms**\n\n` +
 			`**${emoji.get('check')} Acceptable Use**\n` +
-			`├─ Use the bot responsibly and follow Discord's Terms of Service\n` +
+			`├─ Use the bot responsibly and follow Discord's ToS\n` +
 			`├─ Respect all cooldowns and rate limits for fair usage\n` +
 			`├─ Do not attempt to exploit or abuse bot systems\n` +
 			`└─ Maintain appropriate conduct in all interactions\n\n` +
@@ -102,13 +102,14 @@ class TermsOfServiceCommand extends Command {
 			`├─ Automated systems monitor for abuse patterns\n` +
 			`├─ Appeals may be submitted through official channels\n` +
 			`└─ Decisions are made at the discretion of the development team\n\n` +
-			`*Effective: August 2025 | By using this bot, you acknowledge and accept these terms.*`;
+			`*Effective: August 2025 | By using this bot, you acknowledge and accept these terms*`;
 
 		const thumbnailUrl = config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork;
 
 		const section = new SectionBuilder()
 			.addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
 			.setThumbnailAccessory(new ThumbnailBuilder().setURL(thumbnailUrl));
+
 		container.addSectionComponents(section);
 
 		container.addSeparatorComponents(
@@ -134,6 +135,7 @@ class TermsOfServiceCommand extends Command {
 		const section = new SectionBuilder()
 			.addTextDisplayComponents(new TextDisplayBuilder().setContent(message))
 			.setThumbnailAccessory(new ThumbnailBuilder().setURL(thumbnailUrl));
+
 		container.addSectionComponents(section);
 
 		container.addSeparatorComponents(

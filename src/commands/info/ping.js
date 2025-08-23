@@ -29,7 +29,7 @@ class PingCommand extends Command {
 			cooldown: 15,
 			enabledSlash: true,
 			slashData: {
-				name: "ping",
+				name: ["yuki","ping"],
 				description: "Check bot latency and connection status",
 			},
 		});

@@ -458,18 +458,18 @@ class ApplicationEmojiCommand extends Command {
     try {
       const emojis = await client.application.emojis.fetch();
       const animated = emojis.filter(e => e.animated).size;
-      const static = emojis.size - animated;
+      const staticEmojis = emojis.size - animated;
       const usage = ((emojis.size / 50) * 100).toFixed(1);
 
       const content = `**${emoji.get("folder")} Application Emoji Statistics**\n\n` +
         `**${emoji.get("check")} General Statistics:**\n` +
         `├─ **Total Emojis:** ${emojis.size}/50\n` +
         `├─ **Usage:** ${usage}%\n` +
-        `├─ **Static Emojis:** ${static}\n` +
+        `├─ **Static Emojis:** ${staticEmojis}\n` +
         `├─ **Animated Emojis:** ${animated}\n` +
         `└─ **Available Slots:** ${50 - emojis.size}\n\n` +
         `**${emoji.get("info")} Application Details:**\n` +
-        `├─ **Application ID:** \`${client.application.id}\`\n` +
+        `├─ **Application ID:** \`${client.user.id}\`\n` +
         `├─ **Application Name:** ${client.application.name}\n` +
         `└─ **Bot User:** ${client.user.tag}`;
 

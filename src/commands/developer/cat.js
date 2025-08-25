@@ -24,7 +24,7 @@ class CatCommand extends Command {
   constructor() {
     super({
       name: "cat",
-      description: "Display file contents with syntax highlighting and pagination (Owner Only)",
+      description: "Display file contents with syntax highlighting  (Owner Only)",
       usage: "cat <filepath>",
       aliases: ["view", "show"],
       category: "developer",
@@ -58,13 +58,13 @@ class CatCommand extends Command {
   async _displayFile(message, filepath) {
     try {
       const fullPath = this._resolvePath(filepath);
-      
+
       if (!existsSync(fullPath)) {
         return this._sendError(message, "File Not Found", `The file \`${filepath}\` does not exist.`);
       }
 
       const stats = statSync(fullPath);
-      
+
       if (stats.isDirectory()) {
         return this._sendError(message, "Invalid File", `\`${filepath}\` is a directory, not a file.`);
       }
@@ -101,31 +101,26 @@ class CatCommand extends Command {
     const container = new ContainerBuilder();
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`### ${emoji.get("info")} File Display Tool`)
+      new TextDisplayBuilder().setContent(`### ${emoji.get("folder")} File Display Tool`)
     );
 
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
     );
 
-    const content = `**Display file contents with syntax highlighting**\n\n` +
+    const content = `**Display file contents with syntax highlighting and pagination**\n\n` +
       `**${emoji.get("check")} Supported Features:**\n` +
       `├─ Syntax highlighting by file extension\n` +
-      `├─ Pagination for large files\n` +
-      `├─ File metadata display\n` +
-      `├─ Line numbering\n` +
-      `├─ Size and modification date\n` +
-      `└─ Navigation controls\n\n` +
-      `**${emoji.get("folder")} File Limits:**\n` +
-      `├─ **Max Size:** ${this._formatFileSize(MAX_FILE_SIZE)}\n` +
-      `├─ **Lines per Page:** ${LINES_PER_PAGE}\n` +
-      `└─ **Encoding:** UTF-8 only\n\n` +
+      `├─ Pagination for large files (${LINES_PER_PAGE} lines per page)\n` +
+      `├─ Line numbering and file metadata\n` +
+      `├─ Maximum file size: ${this._formatFileSize(MAX_FILE_SIZE)}\n` +
+      `└─ UTF-8 encoding support\n\n` +
       `**${emoji.get("add")} Usage Examples:**\n` +
       `├─ \`cat src/commands/info/botinfo.js\`\n` +
       `├─ \`cat package.json\`\n` +
       `├─ \`cat config/config.js\`\n` +
       `└─ \`cat README.md\`\n\n` +
-      `**${emoji.get("reset")} Supported Extensions:**\n` +
+      `**${emoji.get("info")} Supported Extensions:**\n` +
       `├─ JavaScript (.js, .mjs, .ts)\n` +
       `├─ JSON (.json)\n` +
       `├─ Markdown (.md)\n` +
@@ -162,12 +157,11 @@ class CatCommand extends Command {
     const endLine = Math.min(startLine + LINES_PER_PAGE, lines.length);
     const pageLines = lines.slice(startLine, endLine);
 
-    let content = `**${emoji.get("info")} File Information:**\n`;
-    content += `├─ **Path:** \`${fileInfo.path}\`\n`;
-    content += `├─ **Size:** ${this._formatFileSize(fileInfo.size)}\n`;
-    content += `├─ **Lines:** ${fileInfo.lines.toLocaleString()}\n`;
-    content += `├─ **Modified:** <t:${Math.floor(fileInfo.modified.getTime() / 1000)}:R>\n`;
-    content += `└─ **Page:** ${currentPage + 1}/${totalPages}\n\n`;
+    let content = '';
+    if (totalPages > 1) {
+      content += `**Page ${currentPage + 1} of ${totalPages}** • `;
+    }
+    content += `**Lines ${startLine + 1}-${endLine} of ${fileInfo.lines.toLocaleString()}**\n\n`;
 
     const numberedLines = pageLines.map((line, index) => {
       const lineNumber = (startLine + index + 1).toString().padStart(3, ' ');
@@ -175,13 +169,13 @@ class CatCommand extends Command {
     });
 
     const language = this._getLanguageFromExtension(fileInfo.extension);
-    content += `**${emoji.get("check")} Content (Lines ${startLine + 1}-${endLine}):**\n`;
     content += `\`\`\`${language}\n${numberedLines.join('\n')}\n\`\`\``;
 
     const section = new SectionBuilder()
       .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
-      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail));
-
+    .setThumbnailAccessory(
+      new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
+    );
     container.addSectionComponents(section);
 
     container.addSeparatorComponents(
@@ -189,7 +183,7 @@ class CatCommand extends Command {
     );
 
     const buttons = [];
-    
+
     if (totalPages > 1) {
       if (currentPage > 0) {
         buttons.push(
@@ -207,7 +201,7 @@ class CatCommand extends Command {
             .setEmoji(emoji.get("cross"))
         );
       }
-      
+
       if (currentPage < totalPages - 1) {
         buttons.push(
           new ButtonBuilder()
@@ -376,7 +370,7 @@ class CatCommand extends Command {
   _setupFileCollector(message, userId, fileInfo, lines) {
     let currentPage = 0;
     const totalPages = Math.ceil(lines.length / LINES_PER_PAGE);
-    
+
     const collector = message.createMessageComponentCollector({
       filter: (i) => i.user.id === userId,
       time: 300_000
@@ -481,3 +475,4 @@ class CatCommand extends Command {
 }
 
 export default new CatCommand();
+

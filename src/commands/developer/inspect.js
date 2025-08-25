@@ -30,7 +30,7 @@ class InspectCommand extends Command {
       examples: [
         "inspect client.guilds.cache",
         "inspect process.env",
-        "inspect this.client.commands"
+        "inspect this.client.commands",
       ],
       ownerOnly: true,
     });
@@ -38,14 +38,18 @@ class InspectCommand extends Command {
 
   async execute({ client, message, args }) {
     if (!config.ownerIds?.includes(message.author.id)) {
-      return this._sendError(message, "Access Denied", "This command is restricted to bot owners only.");
+      return this._sendError(
+        message,
+        "Access Denied",
+        "This command is restricted to bot owners only.",
+      );
     }
 
     if (!args.length) {
       const sent = await message.reply({
         components: [this._createHelpContainer()],
         flags: MessageFlags.IsComponentsV2,
-        fetchReply: true
+        fetchReply: true,
       });
       return this._setupHelpCollector(sent, message.author.id, client);
     }
@@ -59,13 +63,15 @@ class InspectCommand extends Command {
     let result, error, type, executionTime;
 
     try {
-      const asyncWrapper = code.includes("await") ? `(async () => { return ${code} })()` : code;
+      const asyncWrapper = code.includes("await")
+        ? `(async () => { return ${code} })()`
+        : code;
       result = eval(asyncWrapper);
-      
+
       if (result instanceof Promise) {
         result = await result;
       }
-      
+
       type = this._getDetailedType(result);
       executionTime = Number(process.hrtime.bigint() - startTime) / 1000000;
     } catch (err) {
@@ -75,26 +81,47 @@ class InspectCommand extends Command {
     }
 
     const sent = await message.reply({
-      components: [this._createResultContainer(code, result, error, type, executionTime, 0)],
+      components: [
+        this._createResultContainer(
+          code,
+          result,
+          error,
+          type,
+          executionTime,
+          0,
+        ),
+      ],
       flags: MessageFlags.IsComponentsV2,
-      fetchReply: true
+      fetchReply: true,
     });
 
-    this._setupResultCollector(sent, message.author.id, client, code, result, error, type, executionTime);
+    this._setupResultCollector(
+      sent,
+      message.author.id,
+      client,
+      code,
+      result,
+      error,
+      type,
+      executionTime,
+    );
   }
 
   _createHelpContainer() {
     const container = new ContainerBuilder();
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`### ${emoji.get("info")} Deep Object Inspection`)
+      new TextDisplayBuilder().setContent(
+        `### ${emoji.get("folder")} Deep Object Inspection`,
+      ),
     );
 
     container.addSeparatorComponents(
-      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     );
 
-    const content = `**Advanced JavaScript object inspection tool**\n\n` +
+    const content =
+      `** JavaScript object inspection tool**\n\n` +
       `**${emoji.get("check")} Available Variables:**\n` +
       `├─ \`client\` - Discord client instance\n` +
       `├─ \`message\` - Current message object\n` +
@@ -106,16 +133,24 @@ class InspectCommand extends Command {
       `├─ \`inspect client.guilds.cache\`\n` +
       `├─ \`inspect process.memoryUsage()\`\n` +
       `├─ \`inspect Object.getOwnPropertyNames(client)\`\n` +
-      `└─ \`inspect this.client.commands.keys()\``;
+      `└─ \`inspect this.client.commands.keys()\`\n\n` +
+      `**${emoji.get("info")} Features:**\n` +
+      `├─ Deep object inspection (3 levels)\n` +
+      `├─ Automatic async/await handling\n` +
+      `├─ Execution timing measurement\n` +
+      `├─ Detailed error reporting\n` +
+      `└─ Paginated output for large results`;
 
     const section = new SectionBuilder()
       .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
-      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail));
+      .setThumbnailAccessory(
+        new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
+      );
 
     container.addSectionComponents(section);
 
     container.addSeparatorComponents(
-      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     );
 
     return container;
@@ -128,62 +163,66 @@ class InspectCommand extends Command {
     const titleEmoji = isError ? emoji.get("cross") : emoji.get("check");
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`### ${titleEmoji} ${title}`)
+      new TextDisplayBuilder().setContent(`### ${titleEmoji} ${title}`),
     );
 
     container.addSeparatorComponents(
-      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     );
 
-    let content = `**${emoji.get("folder")} Input Code:**\n\`\`\`javascript\n${this._truncateString(code, 300)}\n\`\`\`\n\n`;
-    
-    content += `**${emoji.get("info")} Inspection Details:**\n`;
-    content += `├─ **Type:** \`${type}\`\n`;
-    content += `├─ **Time:** \`${executionTime.toFixed(2)}ms\`\n`;
-    content += `├─ **Status:** ${isError ? 'Failed' : 'Success'}\n`;
-    content += `└─ **Depth:** ${isError ? 'N/A' : '3 levels'}\n\n`;
+    let content = `**Code:** \`${this._truncateString(code, 100)}\` • **Type:** \`${type}\` • **Time:** \`${executionTime.toFixed(2)}ms\`\n\n`;
 
     if (isError) {
-      content += `**${emoji.get("cross")} Error Details:**\n`;
-      content += `├─ **Name:** \`${error.name}\`\n`;
-      content += `├─ **Message:** \`${error.message}\`\n`;
-      
+      content += `**${emoji.get("cross")} Error:**\n`;
+      content += `\`\`\`javascript\n${error.name}: ${error.message}\n\`\`\``;
+
       if (error.stack) {
-        const stackLines = error.stack.split('\n').slice(0, 5);
-        content += `└─ **Stack:**\n\`\`\`\n${stackLines.join('\n')}\n\`\`\``;
+        const stackLines = error.stack.split("\n").slice(1, 4);
+        if (stackLines.length > 0) {
+          content += `\n**Stack Preview:**\n\`\`\`\n${stackLines.join("\n")}\n\`\`\``;
+        }
       }
     } else {
       const output = this._deepInspect(result);
-      const outputLines = output.split('\n');
-      
+      const outputLines = output.split("\n");
+
       if (outputLines.length > ITEMS_PER_PAGE) {
         const startIndex = page * ITEMS_PER_PAGE;
-        const endIndex = Math.min(startIndex + ITEMS_PER_PAGE, outputLines.length);
-        const paginatedOutput = outputLines.slice(startIndex, endIndex).join('\n');
-        
-        content += `**${emoji.get("check")} Output (Lines ${startIndex + 1}-${endIndex} of ${outputLines.length}):**\n`;
+        const endIndex = Math.min(
+          startIndex + ITEMS_PER_PAGE,
+          outputLines.length,
+        );
+        const paginatedOutput = outputLines
+          .slice(startIndex, endIndex)
+          .join("\n");
+
+        content += `**Lines ${startIndex + 1}-${endIndex} of ${outputLines.length}:**\n`;
         content += `\`\`\`javascript\n${paginatedOutput}\n\`\`\``;
       } else {
-        content += `**${emoji.get("check")} Output:**\n`;
+        content += `**Output:**\n`;
         content += `\`\`\`javascript\n${output}\n\`\`\``;
       }
     }
 
     const section = new SectionBuilder()
-      .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
-      .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail));
+      .addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(content),
+    )
+    .setThumbnailAccessory(
+      new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
+    );
 
     container.addSectionComponents(section);
 
     container.addSeparatorComponents(
-      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     );
 
     const buttons = [];
-    
+
     if (!isError && result) {
-      const outputLines = this._deepInspect(result).split('\n');
-      
+      const outputLines = this._deepInspect(result).split("\n");
+
       if (outputLines.length > ITEMS_PER_PAGE) {
         if (page > 0) {
           buttons.push(
@@ -191,17 +230,17 @@ class InspectCommand extends Command {
               .setCustomId("inspect_prev")
               .setLabel("Previous")
               .setStyle(ButtonStyle.Secondary)
-              .setEmoji(emoji.get("reset"))
+              .setEmoji(emoji.get("reset")),
           );
         }
-        
+
         if ((page + 1) * ITEMS_PER_PAGE < outputLines.length) {
           buttons.push(
             new ButtonBuilder()
               .setCustomId("inspect_next")
               .setLabel("Next")
               .setStyle(ButtonStyle.Secondary)
-              .setEmoji(emoji.get("add"))
+              .setEmoji(emoji.get("add")),
           );
         }
       }
@@ -209,32 +248,118 @@ class InspectCommand extends Command {
 
     buttons.push(
       new ButtonBuilder()
+        .setCustomId("inspect_details")
+        .setLabel("Details")
+        .setStyle(ButtonStyle.Primary)
+        .setEmoji(emoji.get("info")),
+      new ButtonBuilder()
         .setCustomId("inspect_rerun")
         .setLabel("Re-inspect")
-        .setStyle(ButtonStyle.Primary)
-        .setEmoji(emoji.get("reset")),
-      new ButtonBuilder()
-        .setCustomId("inspect_help")
-        .setLabel("Help")
         .setStyle(ButtonStyle.Secondary)
-        .setEmoji(emoji.get("info"))
+        .setEmoji(emoji.get("reset")),
     );
 
     if (buttons.length > 0) {
       if (buttons.length <= 5) {
-        container.addActionRowComponents(new ActionRowBuilder().addComponents(...buttons));
+        container.addActionRowComponents(
+          new ActionRowBuilder().addComponents(...buttons),
+        );
       } else {
-        container.addActionRowComponents(new ActionRowBuilder().addComponents(...buttons.slice(0, 5)));
+        container.addActionRowComponents(
+          new ActionRowBuilder().addComponents(...buttons.slice(0, 5)),
+        );
       }
     }
 
     return container;
   }
 
+  _createDetailsContainer(code, result, error, type, executionTime) {
+    const container = new ContainerBuilder();
+    const isError = !!error;
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(
+        `### ${emoji.get("info")} Inspection Details`,
+      ),
+    );
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    );
+
+    let content = `**${emoji.get("folder")} Full Code:**\n\`\`\`javascript\n${code}\n\`\`\`\n\n`;
+
+    content += `**${emoji.get("check")} Execution Details:**\n`;
+    content += `├─ **Type:** \`${type}\`\n`;
+    content += `├─ **Time:** \`${executionTime.toFixed(2)}ms\`\n`;
+    content += `├─ **Status:** ${isError ? "Failed" : "Success"}\n`;
+    content += `└─ **Depth:** ${isError ? "N/A" : "3 levels"}\n\n`;
+
+    if (isError) {
+      content += `**${emoji.get("cross")} Error Information:**\n`;
+      content += `├─ **Name:** \`${error.name}\`\n`;
+      content += `├─ **Message:** \`${error.message}\`\n`;
+
+      if (error.stack) {
+        const stackLines = error.stack.split("\n").slice(0, 8);
+        content += `└─ **Full Stack Trace:**\n\`\`\`\n${stackLines.join("\n")}\n\`\`\``;
+      }
+    } else {
+      content += `**${emoji.get("add")} Result Information:**\n`;
+      content += `├─ **Constructor:** \`${result?.constructor?.name || "N/A"}\`\n`;
+      content += `├─ **Prototype:** \`${Object.getPrototypeOf(result)?.constructor?.name || "N/A"}\`\n`;
+
+      if (typeof result === "object" && result !== null) {
+        const keys = Object.keys(result);
+        const ownKeys = Object.getOwnPropertyNames(result);
+        content += `├─ **Own Properties:** ${keys.length}\n`;
+        content += `├─ **All Properties:** ${ownKeys.length}\n`;
+
+        if (Array.isArray(result)) {
+          content += `├─ **Array Length:** ${result.length}\n`;
+        } else if (result instanceof Map) {
+          content += `├─ **Map Size:** ${result.size}\n`;
+        } else if (result instanceof Set) {
+          content += `├─ **Set Size:** ${result.size}\n`;
+        }
+
+        content += `└─ **Enumerable Keys:** ${keys.slice(0, 5).join(", ")}${keys.length > 5 ? "..." : ""}`;
+      } else {
+        content += `├─ **Value:** \`${String(result)}\`\n`;
+        content += `└─ **Primitive Type:** \`${typeof result}\``;
+      }
+    }
+
+    const section = new SectionBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+      .setThumbnailAccessory(
+        new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
+      );
+
+    container.addSectionComponents(section);
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
+    );
+
+    const buttonRow = new ActionRowBuilder().addComponents(
+      new ButtonBuilder()
+        .setCustomId("inspect_back")
+        .setLabel("Back to Result")
+        .setStyle(ButtonStyle.Primary)
+        .setEmoji(emoji.get("folder")),
+    );
+
+    container.addActionRowComponents(buttonRow);
+
+    return container;
+  }
+
   _deepInspect(obj) {
-    if (obj === null) return 'null';
-    if (obj === undefined) return 'undefined';
-    
+    if (obj === null) return "null";
+    if (obj === undefined) return "undefined";
+
     try {
       return inspect(obj, {
         depth: 3,
@@ -246,7 +371,7 @@ class InspectCommand extends Command {
         showHidden: false,
         showProxy: true,
         sorted: true,
-        getters: true
+        getters: true,
       });
     } catch (error) {
       return `[InspectionError: ${error.message}]`;
@@ -254,33 +379,33 @@ class InspectCommand extends Command {
   }
 
   _getDetailedType(obj) {
-    if (obj === null) return 'null';
-    if (obj === undefined) return 'undefined';
-    
+    if (obj === null) return "null";
+    if (obj === undefined) return "undefined";
+
     const basicType = typeof obj;
-    
-    if (basicType === 'object') {
+
+    if (basicType === "object") {
       if (Array.isArray(obj)) return `Array(${obj.length})`;
       if (obj instanceof Map) return `Map(${obj.size})`;
       if (obj instanceof Set) return `Set(${obj.size})`;
-      if (obj instanceof Date) return 'Date';
-      if (obj instanceof RegExp) return 'RegExp';
+      if (obj instanceof Date) return "Date";
+      if (obj instanceof RegExp) return "RegExp";
       if (obj instanceof Error) return `${obj.constructor.name}`;
-      return obj.constructor?.name || 'Object';
+      return obj.constructor?.name || "Object";
     }
-    
+
     return basicType;
   }
 
   _truncateString(str, maxLength) {
     if (str.length <= maxLength) return str;
-    return str.substring(0, maxLength - 3) + '...';
+    return str.substring(0, maxLength - 3) + "...";
   }
 
   _setupHelpCollector(message, userId, client) {
     const collector = message.createMessageComponentCollector({
       filter: (i) => i.user.id === userId,
-      time: 300_000
+      time: 300_000,
     });
 
     collector.on("collect", async (interaction) => {
@@ -294,12 +419,21 @@ class InspectCommand extends Command {
     this._setupCollectorEnd(collector, message);
   }
 
-  _setupResultCollector(message, userId, client, code, result, error, type, executionTime) {
+  _setupResultCollector(
+    message,
+    userId,
+    client,
+    code,
+    result,
+    error,
+    type,
+    executionTime,
+  ) {
     let currentPage = 0;
-    
+
     const collector = message.createMessageComponentCollector({
       filter: (i) => i.user.id === userId,
-      time: 300_000
+      time: 300_000,
     });
 
     collector.on("collect", async (interaction) => {
@@ -310,29 +444,71 @@ class InspectCommand extends Command {
           if (currentPage > 0) {
             currentPage--;
             await interaction.editReply({
-              components: [this._createResultContainer(code, result, error, type, executionTime, currentPage)]
+              components: [
+                this._createResultContainer(
+                  code,
+                  result,
+                  error,
+                  type,
+                  executionTime,
+                  currentPage,
+                ),
+              ],
             });
           }
         } else if (interaction.customId === "inspect_next") {
-          const outputLines = this._deepInspect(result).split('\n');
+          const outputLines = this._deepInspect(result).split("\n");
           const maxPages = Math.ceil(outputLines.length / ITEMS_PER_PAGE);
-          
+
           if (currentPage < maxPages - 1) {
             currentPage++;
             await interaction.editReply({
-              components: [this._createResultContainer(code, result, error, type, executionTime, currentPage)]
+              components: [
+                this._createResultContainer(
+                  code,
+                  result,
+                  error,
+                  type,
+                  executionTime,
+                  currentPage,
+                ),
+              ],
             });
           }
-        } else if (interaction.customId === "inspect_rerun") {
-          await this._inspectCode(client, { 
-            reply: async (options) => await interaction.editReply(options),
-            author: { id: userId }
-          }, code);
-        } else if (interaction.customId === "inspect_help") {
+        } else if (interaction.customId === "inspect_details") {
           await interaction.editReply({
-            components: [this._createHelpContainer()]
+            components: [
+              this._createDetailsContainer(
+                code,
+                result,
+                error,
+                type,
+                executionTime,
+              ),
+            ],
           });
-          return this._setupHelpCollector(message, userId, client);
+        } else if (interaction.customId === "inspect_back") {
+          await interaction.editReply({
+            components: [
+              this._createResultContainer(
+                code,
+                result,
+                error,
+                type,
+                executionTime,
+                currentPage,
+              ),
+            ],
+          });
+        } else if (interaction.customId === "inspect_rerun") {
+          await this._inspectCode(
+            client,
+            {
+              reply: async (options) => await interaction.editReply(options),
+              author: { id: userId },
+            },
+            code,
+          );
         }
       } catch (error) {
         logger.error("InspectCommand", "Result collector error:", error);
@@ -347,9 +523,9 @@ class InspectCommand extends Command {
       try {
         const fetchedMessage = await message.fetch().catch(() => null);
         if (fetchedMessage?.components.length > 0) {
-          const disabledComponents = fetchedMessage.components.map(row => {
+          const disabledComponents = fetchedMessage.components.map((row) => {
             const newRow = ActionRowBuilder.from(row);
-            newRow.components.forEach(component => {
+            newRow.components.forEach((component) => {
               if (component.data.style !== ButtonStyle.Link) {
                 component.setDisabled(true);
               }
@@ -360,7 +536,11 @@ class InspectCommand extends Command {
         }
       } catch (error) {
         if (error.code !== 10008) {
-          logger.error("InspectCommand", "Failed to disable components:", error);
+          logger.error(
+            "InspectCommand",
+            "Failed to disable components:",
+            error,
+          );
         }
       }
     });
@@ -370,27 +550,31 @@ class InspectCommand extends Command {
     const container = new ContainerBuilder();
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`### ${emoji.get("cross")} ${title}`)
+      new TextDisplayBuilder().setContent(`### ${emoji.get("cross")} ${title}`),
     );
 
     container.addSeparatorComponents(
-      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     );
 
     container.addSectionComponents(
       new SectionBuilder()
-        .addTextDisplayComponents(new TextDisplayBuilder().setContent(description))
-        .setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail))
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(description),
+        )
+        .setThumbnailAccessory(
+          new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
+        ),
     );
 
     container.addSeparatorComponents(
-      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     );
 
-    return message.reply({ 
-      components: [container], 
+    return message.reply({
+      components: [container],
       flags: MessageFlags.IsComponentsV2,
-      ephemeral: true 
+      ephemeral: true,
     });
   }
 }

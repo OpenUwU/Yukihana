@@ -7,7 +7,10 @@ export const emoji   ={
   "reset": "<:yuki_reset:1405115815241453681>",
   "folder": "<:yuki_folder:1405120584232337470>",
   "openfolder": "<:yuki_openfolder:1405120588908855371>",
-
+"music": "<a:music:1409479087864549499>",
+"right": "<:arrow:1380482153808400404>",
+"left": "<:arrow_red_left:1380491961437257778>",
+  "loading": "<a:loading:1409479745875345428>",
   get(name, fallback   ='') {
     return this[name] || fallback;
   },

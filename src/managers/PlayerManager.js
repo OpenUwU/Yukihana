@@ -101,7 +101,7 @@ export class PlayerManager {
     const { current } = player.queue;
     const duration = current?.info?.duration ?? 0;
 
-    if (player.queue.length > 0) {
+    if (!this.isEmpty) {
       await player.skip(amount);
     } else if (player.repeatMode === "track" && duration > 0) {
       await player.seek(duration);
@@ -180,6 +180,13 @@ export class PlayerManager {
   }
   get previousTracks() {
     return this.player.queue.previous;
+  }
+  get isEmpty(){
+    if(this.queueSize === 0 && !this.currentTrack){
+      return true;
+    }else{
+      return false;
+    }
   }
 
   async addTracks(tracks, position) {

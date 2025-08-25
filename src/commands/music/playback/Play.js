@@ -14,6 +14,7 @@ import {
 import { PlayerManager } from "#managers/PlayerManager";
 import { db } from "#database/DatabaseManager";
 import { config } from "#config/config";
+import emoji from "#config/emoji";
 
 class PlayCommand extends Command {
   constructor() {
@@ -27,7 +28,7 @@ class PlayCommand extends Command {
         "play never gonna give you up",
         "play rick astley --src yt",
         "play despacito --src sp",
-        "play https://www.youtube.com/watch?v  =dQw4w9WgXcQ",
+        "play https://www.youtube.com/watch?v=dQw4w9WgXcQ",
       ],
       cooldown: 3,
       voiceRequired: true,
@@ -59,7 +60,7 @@ class PlayCommand extends Command {
           },
           {
             name: "position",
-            description: "Position in queue to add the song (1   =next)",
+            description: "Position in queue to add the song (1 = next)",
             type: 4,
             required: false,
             min_value: 1,
@@ -71,10 +72,10 @@ class PlayCommand extends Command {
 
   async autocomplete({ interaction, client }) {
     try {
-      const focusedOption   =interaction.options.getFocused(true);
+      const focusedOption = interaction.options.getFocused(true);
 
-      if (focusedOption.name   ==='query') {
-        const query   =focusedOption.value;
+      if (focusedOption.name === 'query') {
+        const query = focusedOption.value;
 
         if (!query || query.length < 2) {
           return interaction.respond([]);
@@ -86,11 +87,11 @@ class PlayCommand extends Command {
           ]);
         }
 
-        const source   =interaction.options.getString('source') || 'sp';
-        const searchSource   =this._normalizeSource(source);
+        const source = interaction.options.getString('source') || 'sp';
+        const searchSource = this._normalizeSource(source);
 
         try {
-          const searchResult   =await client.music.search(query, {
+          const searchResult = await client.music.search(query, {
             source: searchSource,
             limit: 10
           });
@@ -101,12 +102,12 @@ class PlayCommand extends Command {
             ]);
           }
 
-          const suggestions   =searchResult.tracks.slice(0, 25).map(track   => {
-            const title   =track.info.title.length > 80
+          const suggestions = searchResult.tracks.slice(0, 25).map(track => {
+            const title = track.info.title.length > 80
               ? track.info.title.substring(0, 77) + '...'
               : track.info.title;
-            const author   =track.info.author || 'Unknown';
-            const duration   =this._formatDuration(track.info.duration);
+            const author = track.info.author || 'Unknown';
+            const duration = this._formatDuration(track.info.duration);
 
             return {
               name: `${title} - ${author} (${duration})`,
@@ -133,14 +134,14 @@ class PlayCommand extends Command {
 
   async execute({ client, message, args }) {
     try {
-      if (args.length   ===0) {
+      if (args.length === 0) {
         return message.reply({
           components: [this._createErrorContainer("Please provide a song name or URL.")],
           flags: MessageFlags.IsComponentsV2,
         });
       }
 
-      const { query, source, position }   =this._parseFlags(args);
+      const { query, source, position } = this._parseFlags(args);
 
       if (!query.trim()) {
         return message.reply({
@@ -149,7 +150,7 @@ class PlayCommand extends Command {
         });
       }
 
-      const voiceChannel   =message.member?.voice?.channel;
+      const voiceChannel = message.member?.voice?.channel;
       if (!voiceChannel) {
         return message.reply({
           components: [this._createErrorContainer("You must be in a voice channel.")],
@@ -157,7 +158,7 @@ class PlayCommand extends Command {
         });
       }
 
-      const permissions   =voiceChannel.permissionsFor(message.guild.members.me);
+      const permissions = voiceChannel.permissionsFor(message.guild.members.me);
       if (!permissions.has(["Connect", "Speak"])) {
         return message.reply({
           components: [this._createErrorContainer("I need permission to join and speak in your voice channel.")],
@@ -165,20 +166,20 @@ class PlayCommand extends Command {
         });
       }
 
-      const loadingMessage   =await message.reply({
+      const loadingMessage = await message.reply({
         components: [this._createLoadingContainer(query)],
         flags: MessageFlags.IsComponentsV2,
       });
 
-      const player   =client.music.getPlayer(message.guild.id) || (await client.music.createPlayer({
+      const player = client.music.getPlayer(message.guild.id) || (await client.music.createPlayer({
         guildId: message.guild.id,
         textChannelId: message.channel.id,
         voiceChannelId: voiceChannel.id
       }));
 
-      const pm   =new PlayerManager(player);
+      const pm = new PlayerManager(player);
 
-      const result   =await this._handlePlayRequest({
+      const result = await this._handlePlayRequest({
         client,
         guildId: message.guild.id,
         query,
@@ -188,21 +189,21 @@ class PlayCommand extends Command {
         pm,
       });
 
-      await this._updateMessage(loadingMessage, result, message.guild.id, client);
+      await this._updateMessage(loadingMessage, result, message.guild.id, client, message.author.id);
     } catch (error) {
       client.logger?.error("PlayCommand", `Error in prefix command: ${error.message}`, error);
-      const errorContainer   =this._createErrorContainer("An error occurred. Please try again.");
+      const errorContainer = this._createErrorContainer("An error occurred. Please try again.");
       if (message) {
-        await message.reply({ components: [errorContainer], flags: MessageFlags.IsComponentsV2 }).catch(()   => {});
+        await message.reply({ components: [errorContainer], flags: MessageFlags.IsComponentsV2 }).catch(() => {});
       }
     }
   }
 
   async slashExecute({ client, interaction }) {
     try {
-      const query   =interaction.options.getString("query");
-      const source   =interaction.options.getString("source");
-      const position   =interaction.options.getInteger("position");
+      const query = interaction.options.getString("query");
+      const source = interaction.options.getString("source");
+      const position = interaction.options.getInteger("position");
 
       if (!query) {
         return interaction.reply({
@@ -212,7 +213,7 @@ class PlayCommand extends Command {
         });
       }
 
-      const voiceChannel   =interaction.member?.voice?.channel;
+      const voiceChannel = interaction.member?.voice?.channel;
       if (!voiceChannel) {
         return interaction.reply({
           components: [this._createErrorContainer("You must be in a voice channel.")],
@@ -221,7 +222,7 @@ class PlayCommand extends Command {
         });
       }
 
-      const permissions   =voiceChannel.permissionsFor(interaction.guild.members.me);
+      const permissions = voiceChannel.permissionsFor(interaction.guild.members.me);
       if (!permissions.has(["Connect", "Speak"])) {
         return interaction.reply({
           components: [this._createErrorContainer("I need permission to join and speak in your voice channel.")],
@@ -230,33 +231,34 @@ class PlayCommand extends Command {
         });
       }
 
-      await interaction.reply({
+      const messageInstance = await interaction.reply({
         components: [this._createLoadingContainer(query)],
         flags: MessageFlags.IsComponentsV2,
         fetchReply: true,
       });
 
-      const player   =client.music.getPlayer(interaction.guild.id) || (await client.music.createPlayer({
+      const player = client.music.getPlayer(interaction.guild.id) || (await client.music.createPlayer({
         guildId: interaction.guild.id,
         textChannelId: interaction.channel.id,
         voiceChannelId: voiceChannel.id
       }));
 
-      const pm   =new PlayerManager(player);
+      const pm = new PlayerManager(player);
 
-      const result   =await this._handlePlayRequest({
+      const result = await this._handlePlayRequest({
         client,
         guildId: interaction.guild.id,
         query,
         source,
         requester: interaction.user,
         position,
+        pm,
       });
 
-      await this._updateInteraction(interaction, result, interaction.guild.id, client);
+      await this._updateInteraction(interaction, result, interaction.guild.id, client, interaction.user.id);
     } catch (error) {
       client.logger?.error("PlayCommand", `Error in slash command: ${error.message}`, error);
-      const errorContainer   =this._createErrorContainer("An error occurred. Please try again.");
+      const errorContainer = this._createErrorContainer("An error occurred. Please try again.");
       try {
         if (interaction.replied || interaction.deferred) {
           await interaction.editReply({ components: [errorContainer] });
@@ -274,20 +276,20 @@ class PlayCommand extends Command {
         await pm.connect();
       }
 
-      const finalquery   =query;
-      const options   ={ requester };
+      const finalquery = query;
+      const options = { requester };
 
       if (!this._isUrl(query)) {
-        options.source   =this._normalizeSource(source);
+        options.source = this._normalizeSource(source);
       }
 
-      const searchResult   =await client.music.search(finalquery, options);
+      const searchResult = await client.music.search(finalquery, options);
 
       if (!searchResult || !searchResult.tracks?.length) {
         return { success: false, message: `No results found for: ${query}` };
       }
 
-      if (searchResult.loadType   ==="playlist") {
+      if (searchResult.loadType === "playlist") {
         return this._handlePlaylist(pm, searchResult, position, guildId, requester.id);
       } else {
         return this._handleSingleTrack(pm, searchResult.tracks[0], position, guildId, requester.id);
@@ -299,10 +301,10 @@ class PlayCommand extends Command {
   }
 
   async _handleSingleTrack(playerManager, track, position, guildId, userId) {
-    const wasEmpty   =playerManager.queue.tracks.length   ===0 && !playerManager.isPlaying;
+    const wasEmpty = playerManager.queue.tracks.length === 0 && !playerManager.isPlaying;
 
-    const currentQueueSize   =wasEmpty ? 0 : playerManager.queue.tracks.length;
-    const queueLimitCheck   =this._checkQueueLimit(currentQueueSize, 1, guildId, userId);
+    const currentQueueSize = wasEmpty ? 0 : playerManager.queue.tracks.length;
+    const queueLimitCheck = this._checkQueueLimit(currentQueueSize, 1, guildId, userId);
 
     if (!queueLimitCheck.allowed) {
       return { success: false, message: queueLimitCheck.message, isPremiumLimit: true };
@@ -314,29 +316,29 @@ class PlayCommand extends Command {
       await playerManager.play();
       return { success: true, type: "playing", track };
     } else {
-      const queuePosition   =position || playerManager.queue.tracks.length;
-      const premiumStatus   =this._getPremiumStatus(guildId, userId);
+      const queuePosition = position || playerManager.queue.tracks.length;
+      const premiumStatus = this._getPremiumStatus(guildId, userId);
       return { success: true, type: "queued", track, queuePosition, showButtons: true, premiumStatus };
     }
   }
 
   async _handlePlaylist(playerManager, searchResult, position, guildId, userId) {
-    const tracks   =searchResult.tracks;
-    const wasEmpty   =playerManager.queue.tracks.length   ===0 && !playerManager.isPlaying;
+    const tracks = searchResult.tracks;
+    const wasEmpty = playerManager.queue.tracks.length === 0 && !playerManager.isPlaying;
 
-    const currentQueueSize   =wasEmpty ? 0 : playerManager.queue.tracks.length;
-    const queueLimitCheck   =this._checkQueueLimit(currentQueueSize, tracks.length, guildId, userId);
+    const currentQueueSize = wasEmpty ? 0 : playerManager.queue.tracks.length;
+    const queueLimitCheck = this._checkQueueLimit(currentQueueSize, tracks.length, guildId, userId);
 
     if (!queueLimitCheck.allowed) {
       return { success: false, message: queueLimitCheck.message, isPremiumLimit: true };
     }
 
     if (!queueLimitCheck.canAddAll) {
-      const tracksToAdd   =tracks.slice(0, queueLimitCheck.tracksToAdd);
+      const tracksToAdd = tracks.slice(0, queueLimitCheck.tracksToAdd);
       await playerManager.addTracks(tracksToAdd, position ? position - 1 : undefined);
 
-      const premiumStatus   =queueLimitCheck.premiumStatus;
-      const limitWarning   =premiumStatus.hasPremium
+      const premiumStatus = queueLimitCheck.premiumStatus;
+      const limitWarning = premiumStatus.hasPremium
         ? `Added ${tracksToAdd.length} of ${tracks.length} tracks (premium queue limit reached)`
         : `Added ${tracksToAdd.length} of ${tracks.length} tracks (free tier limit reached). Upgrade to premium for up to ${config.queue.maxSongs.premium} songs.`;
 
@@ -370,13 +372,13 @@ class PlayCommand extends Command {
       await playerManager.play();
       return { success: true, type: "playlist_playing", playlist: searchResult.playlist, tracks: tracks };
     } else {
-      const premiumStatus   =this._getPremiumStatus(guildId, userId);
+      const premiumStatus = this._getPremiumStatus(guildId, userId);
       return { success: true, type: "playlist_queued", playlist: searchResult.playlist, tracks: tracks, premiumStatus };
     }
   }
 
   _getPremiumStatus(guildId, userId) {
-    const premiumStatus   =db.hasAnyPremium(userId, guildId);
+    const premiumStatus = db.hasAnyPremium(userId, guildId);
     return {
       hasPremium: !!premiumStatus,
       type: premiumStatus ? premiumStatus.type : 'free',
@@ -385,11 +387,11 @@ class PlayCommand extends Command {
   }
 
   _checkQueueLimit(currentQueueSize, tracksToAdd, guildId, userId) {
-    const premiumStatus   =this._getPremiumStatus(guildId, userId);
-    const availableSlots   =premiumStatus.maxSongs - currentQueueSize;
+    const premiumStatus = this._getPremiumStatus(guildId, userId);
+    const availableSlots = premiumStatus.maxSongs - currentQueueSize;
 
     if (availableSlots <= 0) {
-      const limitMessage   =premiumStatus.hasPremium
+      const limitMessage = premiumStatus.hasPremium
         ? `Premium queue is full. You can have up to ${premiumStatus.maxSongs} songs in queue.`
         : `Free tier queue is full. You can have up to ${premiumStatus.maxSongs} songs in queue. Upgrade to premium for up to ${config.queue.maxSongs.premium} songs.`;
 
@@ -402,8 +404,8 @@ class PlayCommand extends Command {
       };
     }
 
-    const canAddAll   =tracksToAdd <= availableSlots;
-    const tracksToAddActual   =canAddAll ? tracksToAdd : availableSlots;
+    const canAddAll = tracksToAdd <= availableSlots;
+    const tracksToAddActual = canAddAll ? tracksToAdd : availableSlots;
 
     return {
       allowed: true,
@@ -415,20 +417,26 @@ class PlayCommand extends Command {
   }
 
   _createLoadingContainer(query) {
-    const container   =new ContainerBuilder();
+    const container = new ContainerBuilder();
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent("Music Search")
+      new TextDisplayBuilder().setContent(`${emoji.get('loading')} **Music Search**`)
     );
 
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
     );
 
+    const content = `**Searching for music...**\n\n` +
+      `├─ **${emoji.get('music')} Query:** ${query}\n` +
+      `├─ **${emoji.get('folder')} Sources:** Spotify, YouTube, Apple Music\n` +
+      `└─ **${emoji.get('info')} Status:** Processing search request\n\n` +
+      `*Please wait while we find your music*`;
+
     container.addSectionComponents(
       new SectionBuilder()
         .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(`Searching for: ${query}`)
+          new TextDisplayBuilder().setContent(content)
         )
         .setThumbnailAccessory(
           new ThumbnailBuilder().setURL(config.assets.searchIcon || config.assets.defaultTrackArtwork)
@@ -438,21 +446,26 @@ class PlayCommand extends Command {
     return container;
   }
 
-  _createErrorContainer(message, isPremiumLimit   =false) {
-    const container   =new ContainerBuilder();
+  _createErrorContainer(message, isPremiumLimit = false) {
+    const container = new ContainerBuilder();
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(isPremiumLimit ? "Queue Limit" : "Error")
+      new TextDisplayBuilder().setContent(`${emoji.get('cross')} **${isPremiumLimit ? "Queue Limit" : "Error"}**`)
     );
 
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
     );
 
+    const content = `**Something went wrong**\n\n` +
+      `├─ **${emoji.get('info')} Issue:** ${message}\n` +
+      `└─ **${emoji.get('reset')} Action:** Try again or contact support\n\n` +
+      `*Please check your input and try again*`;
+
     container.addSectionComponents(
       new SectionBuilder()
         .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(message)
+          new TextDisplayBuilder().setContent(content)
         )
         .setThumbnailAccessory(
           new ThumbnailBuilder().setURL(config.assets.errorIcon || config.assets.defaultTrackArtwork)
@@ -463,46 +476,53 @@ class PlayCommand extends Command {
   }
 
   _createSuccessContainer(result) {
-    const container   =new ContainerBuilder();
+    const container = new ContainerBuilder();
 
-    if (result.type   ==="playing" || result.type   ==="queued") {
-      const { track, premiumStatus }   =result;
-      const title   =result.type   ==="playing" ? "Now Playing" : "Added to Queue";
+    if (result.type === "playing" || result.type === "queued") {
+      const { track, premiumStatus } = result;
+      const title = result.type === "playing" ? "Now Playing" : "Added to Queue";
 
       container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(title)
+        new TextDisplayBuilder().setContent(`${emoji.get('music')} **${title}**`)
       );
 
       container.addSeparatorComponents(
         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
       );
 
+      const content = `**Track Information**\n\n` +
+        `├─ **${emoji.get('check')} Title:** ${track.info.title}\n` +
+        `├─ **${emoji.get('folder')} Artist:** ${track.info.author || "Unknown"}\n` +
+        `├─ **${emoji.get('info')} Duration:** ${this._formatDuration(track.info.duration)}\n` +
+        `└─ **${emoji.get('add')} Status:** ${result.type === "playing" ? "Now playing" : `Position ${result.queuePosition || 0}`}\n\n` +
+        `${result.type === "playing" ? "*Currently streaming in voice channel*" : "*Track has been queued successfully*"}`;
+
       container.addSectionComponents(
         new SectionBuilder()
           .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(track.info.title),
-            new TextDisplayBuilder().setContent(`by ${track.info.author || "Unknown"} | ${this._formatDuration(track.info.duration)}`)
+            new TextDisplayBuilder().setContent(content)
           )
           .setThumbnailAccessory(
             new ThumbnailBuilder().setURL(track.info.artworkUrl || config.assets.defaultTrackArtwork)
           )
       );
 
-      if (result.type   ==="queued" && premiumStatus) {
+      if (result.type === "queued" && premiumStatus) {
         container.addSeparatorComponents(
           new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
         );
 
-        const queueText   =result.queuePosition ? `Position ${result.queuePosition} in queue` : "Added to queue";
-        const statusText   =premiumStatus.hasPremium
-          ? `Premium Queue: ${result.queuePosition || 0}/${premiumStatus.maxSongs} songs`
-          : `Free Queue: ${result.queuePosition || 0}/${premiumStatus.maxSongs} songs`;
+        const statusContent = `**Queue Information**\n\n` +
+          `├─ **${emoji.get('add')} Position:** ${result.queuePosition || 0}\n` +
+          `├─ **${emoji.get('folder')} Queue Type:** ${premiumStatus.hasPremium ? "Premium" : "Free"}\n` +
+          `├─ **${emoji.get('info')} Usage:** ${result.queuePosition || 0}/${premiumStatus.maxSongs} songs\n` +
+          `└─ **${emoji.get('check')} Status:** ${premiumStatus.hasPremium ? "Premium active" : "Free tier"}\n\n` +
+          `${!premiumStatus.hasPremium ? `*Upgrade to premium for ${config.queue.maxSongs.premium} song limit*` : "*Premium features unlocked*"}`;
 
         container.addSectionComponents(
           new SectionBuilder()
             .addTextDisplayComponents(
-              new TextDisplayBuilder().setContent(queueText),
-              new TextDisplayBuilder().setContent(statusText)
+              new TextDisplayBuilder().setContent(statusContent)
             )
             .setThumbnailAccessory(
               new ThumbnailBuilder().setURL(config.assets.queueIcon || config.assets.defaultTrackArtwork)
@@ -511,59 +531,66 @@ class PlayCommand extends Command {
       }
 
     } else if (result.type.startsWith("playlist")) {
-      const { playlist, tracks, premiumStatus, limitWarning, totalTracks }   =result;
-      const trackCount   =tracks.length;
+      const { playlist, tracks, premiumStatus, limitWarning, totalTracks } = result;
+      const trackCount = tracks.length;
 
       let title, description;
-      if (result.type   ==="playlist_playing") {
-        title   ="Playing Playlist";
-        description   =`Added ${trackCount} tracks to the queue`;
-      } else if (result.type   ==="playlist_playing_partial") {
-        title   ="Playing Playlist";
-        description   =limitWarning;
-      } else if (result.type   ==="playlist_queued_partial") {
-        title   ="Queued Playlist";
-        description   =limitWarning;
+      if (result.type === "playlist_playing") {
+        title = "Playing Playlist";
+        description = "Started playlist playback";
+      } else if (result.type === "playlist_playing_partial") {
+        title = "Playing Playlist";
+        description = "Partial playlist loaded";
+      } else if (result.type === "playlist_queued_partial") {
+        title = "Queued Playlist";
+        description = "Partial playlist queued";
       } else {
-        title   ="Queued Playlist";
-        description   =`Added ${trackCount} tracks to the queue`;
+        title = "Queued Playlist";
+        description = "Playlist added to queue";
       }
 
-      const firstTrackArt   =tracks[0]?.info?.artworkUrl;
+      const firstTrackArt = tracks[0]?.info?.artworkUrl;
 
       container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(title)
+        new TextDisplayBuilder().setContent(`${emoji.get('folder')} **${title}**`)
       );
 
       container.addSeparatorComponents(
         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
       );
 
+      const content = `**Playlist Information**\n\n` +
+        `├─ **${emoji.get('check')} Name:** ${playlist.name}\n` +
+        `├─ **${emoji.get('add')} Tracks Added:** ${trackCount}\n` +
+        `├─ **${emoji.get('info')} Total Tracks:** ${totalTracks || trackCount}\n` +
+        `└─ **${emoji.get('folder')} Status:** ${description}\n\n` +
+        `${limitWarning || "*All tracks processed successfully*"}`;
+
       container.addSectionComponents(
         new SectionBuilder()
           .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent(playlist.name),
-            new TextDisplayBuilder().setContent(description)
+            new TextDisplayBuilder().setContent(content)
           )
           .setThumbnailAccessory(
             new ThumbnailBuilder().setURL(firstTrackArt || config.assets.defaultTrackArtwork)
           )
       );
 
-      if ((result.type   ==="playlist_queued" || result.type   ==="playlist_queued_partial" || result.type   ==="playlist_playing_partial") && premiumStatus) {
+      if ((result.type === "playlist_queued" || result.type === "playlist_queued_partial" || result.type === "playlist_playing_partial") && premiumStatus) {
         container.addSeparatorComponents(
           new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
         );
 
-        const statusText   =premiumStatus.hasPremium
-          ? "Premium Queue Active"
-          : `Free Queue Active | Upgrade for ${config.queue.maxSongs.premium} song limit`;
+        const statusContent = `**Queue Status**\n\n` +
+          `├─ **${emoji.get('folder')} Queue Type:** ${premiumStatus.hasPremium ? "Premium" : "Free"}\n` +
+          `├─ **${emoji.get('info')} Limit:** ${premiumStatus.maxSongs} songs maximum\n` +
+          `└─ **${emoji.get('check')} Status:** ${premiumStatus.hasPremium ? "Premium active" : "Free tier active"}\n\n` +
+          `${!premiumStatus.hasPremium ? `*Upgrade to premium for ${config.queue.maxSongs.premium} song limit*` : "*Premium queue features enabled*"}`;
 
         container.addSectionComponents(
           new SectionBuilder()
             .addTextDisplayComponents(
-              new TextDisplayBuilder().setContent("Queue Status"),
-              new TextDisplayBuilder().setContent(statusText)
+              new TextDisplayBuilder().setContent(statusContent)
             )
             .setThumbnailAccessory(
               new ThumbnailBuilder().setURL(config.assets.premiumIcon || config.assets.defaultTrackArtwork)
@@ -592,99 +619,100 @@ class PlayCommand extends Command {
     );
   }
 
-  async _updateMessage(message, result, guildId, client) {
+  async _updateMessage(message, result, guildId, client, userId) {
     try {
-      const container   =result.success ? this._createSuccessContainer(result) : this._createErrorContainer(result.message, result.isPremiumLimit);
+      const container = result.success ? this._createSuccessContainer(result) : this._createErrorContainer(result.message, result.isPremiumLimit);
 
       if (result.success && result.showButtons && result.queuePosition) {
         container.addSeparatorComponents(
           new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
         );
 
-        const buttonRow   =this._createButtons(result.queuePosition - 1, guildId);
+        const buttonRow = this._createButtons(result.queuePosition - 1, guildId);
         container.addActionRowComponents(buttonRow);
       }
 
-      const sentMessage   =await message.edit({
+      await message.edit({
         content: '',
         components: [container],
         flags: MessageFlags.IsComponentsV2,
       });
 
       if (result.success && result.showButtons && result.queuePosition) {
-        this._setupButtonCollector(sentMessage, guildId, client);
+        this._setupButtonCollector(message, guildId, client, userId);
       }
     } catch (error) {
-       client.logger?.error("PlayCommand", `Error updating message: ${error.message}`, error);
+      client.logger?.error("PlayCommand", `Error updating message: ${error.message}`, error);
     }
   }
 
-  async _updateInteraction(interaction, result, guildId, client) {
+  async _updateInteraction(interaction, result, guildId, client, userId) {
     try {
-      const container   =result.success ? this._createSuccessContainer(result) : this._createErrorContainer(result.message, result.isPremiumLimit);
+      const container = result.success ? this._createSuccessContainer(result) : this._createErrorContainer(result.message, result.isPremiumLimit);
 
       if (result.success && result.showButtons && result.queuePosition) {
         container.addSeparatorComponents(
           new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
         );
 
-        const buttonRow   =this._createButtons(result.queuePosition - 1, guildId);
+        const buttonRow = this._createButtons(result.queuePosition - 1, guildId);
         container.addActionRowComponents(buttonRow);
       }
 
-      const sentMessage   =await interaction.editReply({
+      await interaction.editReply({
         content: '',
         components: [container],
       });
 
       if (result.success && result.showButtons && result.queuePosition) {
-        this._setupButtonCollector(sentMessage, guildId, client);
+        this._setupButtonCollector(interaction, guildId, client, userId);
       }
     } catch (error) {
       client.logger?.error("PlayCommand", `Error updating interaction: ${error.message}`, error);
     }
   }
 
-  _setupButtonCollector(message, guildId, client) {
-    const filter   =(i)   => i.customId.endsWith(`_${guildId}`);
-    const collector   =message.createMessageComponentCollector({ filter, time: 300_000, max: 1 });
+  _setupButtonCollector(messageOrInteraction, guildId, client, userId) {
+    const message = messageOrInteraction.fetchReply ? messageOrInteraction : messageOrInteraction;
+    const filter = (i) => i.user.id === userId && i.customId.endsWith(`_${guildId}`);
+    const collector = message.createMessageComponentCollector({ filter, time: 300_000, max: 1 });
 
-    collector.on("collect", async (interaction)   => {
+    collector.on("collect", async (interaction) => {
       try {
         await interaction.deferUpdate();
 
-        const parts   =interaction.customId.split('_');
+        const parts = interaction.customId.split('_');
         parts.pop();
-        const trackIndexStr   =parts.pop();
-        const action   =parts.join('_');
-        const trackIndex   =parseInt(trackIndexStr, 10);
+        const trackIndexStr = parts.pop();
+        const action = parts.join('_');
+        const trackIndex = parseInt(trackIndexStr, 10);
 
         if (isNaN(trackIndex)) return;
 
         if (!interaction.member?.voice?.channel) return;
 
-        const player   =client.music?.getPlayer(guildId);
+        const player = client.music?.getPlayer(guildId);
         if (!player) return;
 
-        const pm   =new PlayerManager(player);
+        const pm = new PlayerManager(player);
         if (trackIndex < 0 || trackIndex >= player.queue.tracks.length) return;
 
-        const track   =player.queue.tracks[trackIndex];
+        const track = player.queue.tracks[trackIndex];
         let newContainer;
 
         switch (action) {
           case "play_now":
             await pm.moveTrack(trackIndex, 0);
             await pm.skip();
-            newContainer   =this._createActionResultContainer("Track Updated", `Playing Now: ${track.info.title}`);
+            newContainer = this._createActionResultContainer("Track Updated", `Now playing: ${track.info.title}`);
             break;
           case "play_next":
             await pm.moveTrack(trackIndex, 0);
-            newContainer   =this._createActionResultContainer("Queue Updated", `Will Play Next: ${track.info.title}`);
+            newContainer = this._createActionResultContainer("Queue Updated", `Will play next: ${track.info.title}`);
             break;
           case "remove_track":
             await pm.removeTrack(trackIndex);
-            newContainer   =this._createActionResultContainer("Track Removed", `Removed from Queue: ${track.info.title}`);
+            newContainer = this._createActionResultContainer("Track Removed", `Removed: ${track.info.title}`);
             break;
           default:
             return;
@@ -697,26 +725,25 @@ class PlayCommand extends Command {
       }
     });
 
-    collector.on("end", async (collected, reason)   => {
-      if (reason   ==='limit') return;
+    collector.on("end", async (collected, reason) => {
+      if (reason === 'limit') return;
 
       try {
-        const currentMessage   =await message.fetch().catch(()   => null);
+        const currentMessage = await message.fetch().catch(() => null);
         if (!currentMessage?.components?.length) return;
 
-        const originalComponents   =currentMessage.components[0]?.components;
-        if (!originalComponents) return;
+        const originalContainer = currentMessage.components[0];
+        if (!originalContainer) return;
 
-        const newContainer   =new ContainerBuilder();
-
-        for (const component of originalComponents) {
-          if (component.type   ===1) {
+        const newContainer = new ContainerBuilder();
+        for (const component of originalContainer.components) {
+          if (component.type === 1) {
             continue;
-          } else if (component.type   ===2) {
+          } else if (component.type === 2) {
             newContainer.addTextDisplayComponents(component);
-          } else if (component.type   ===3) {
+          } else if (component.type === 3) {
             newContainer.addSeparatorComponents(component);
-          } else if (component.type   ===4) {
+          } else if (component.type === 4) {
             newContainer.addSectionComponents(component);
           }
         }
@@ -726,7 +753,7 @@ class PlayCommand extends Command {
           flags: MessageFlags.IsComponentsV2
         });
       } catch (error) {
-        if (error.code   !==10008) {
+        if (error.code !== 10008) {
           client.logger?.error("PlayCommand", `Error removing buttons after timeout: ${error.message}`, error);
         }
       }
@@ -734,20 +761,25 @@ class PlayCommand extends Command {
   }
 
   _createActionResultContainer(title, message) {
-    const container   =new ContainerBuilder();
+    const container = new ContainerBuilder();
 
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(title)
+      new TextDisplayBuilder().setContent(`${emoji.get('check')} **${title}**`)
     );
 
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
     );
 
+    const content = `**Action Completed**\n\n` +
+      `├─ **${emoji.get('info')} Result:** ${message}\n` +
+      `└─ **${emoji.get('check')} Status:** Successfully processed\n\n` +
+      `*Action has been executed*`;
+
     container.addSectionComponents(
       new SectionBuilder()
         .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(message)
+          new TextDisplayBuilder().setContent(content)
         )
         .setThumbnailAccessory(
           new ThumbnailBuilder().setURL(config.assets.successIcon || config.assets.defaultTrackArtwork)
@@ -758,15 +790,15 @@ class PlayCommand extends Command {
   }
 
   _parseFlags(args) {
-    const flags   ={ query: [], source: null, position: null };
-    for (let i   =0; i < args.length; i++) {
-      const arg   =args[i];
-      if (arg   ==="--src" || arg   ==="--source") {
-        if (i + 1 < args.length) flags.source   =args[++i];
-      } else if (arg   ==="--pos" || arg   ==="--position") {
+    const flags = { query: [], source: null, position: null };
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      if (arg === "--src" || arg === "--source") {
+        if (i + 1 < args.length) flags.source = args[++i];
+      } else if (arg === "--pos" || arg === "--position") {
         if (i + 1 < args.length) {
-          const pos   =parseInt(args[++i], 10);
-          if (!isNaN(pos) && pos > 0) flags.position   =pos;
+          const pos = parseInt(args[++i], 10);
+          if (!isNaN(pos) && pos > 0) flags.position = pos;
         }
       } else if (!arg.startsWith("--")) {
         flags.query.push(arg);
@@ -776,7 +808,7 @@ class PlayCommand extends Command {
   }
 
   _normalizeSource(source) {
-    const sourceMap   ={
+    const sourceMap = {
       yt: "ytsearch", youtube: "ytsearch",
       sp: "spsearch", spotify: "spsearch",
       am: "amsearch", apple: "amsearch",
@@ -798,9 +830,9 @@ class PlayCommand extends Command {
 
   _formatDuration(ms) {
     if (!ms || ms < 0) return "Live";
-    const seconds   =Math.floor((ms / 1000) % 60).toString().padStart(2, "0");
-    const minutes   =Math.floor((ms / (1000 * 60)) % 60).toString().padStart(2, "0");
-    const hours   =Math.floor(ms / (1000 * 60 * 60));
+    const seconds = Math.floor((ms / 1000) % 60).toString().padStart(2, "0");
+    const minutes = Math.floor((ms / (1000 * 60)) % 60).toString().padStart(2, "0");
+    const hours = Math.floor(ms / (1000 * 60 * 60));
     if (hours > 0) return `${hours}:${minutes}:${seconds}`;
     return `${minutes}:${seconds}`;
   }

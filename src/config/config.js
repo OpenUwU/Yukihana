@@ -10,7 +10,7 @@ export const config = {
     {
       id: "main-node",
       host: process.env.lavahost,
-      port: 2002,
+      port: 7023,
       authorization: process.env.passlink,
       secure: false,
       retryAmount: 5,

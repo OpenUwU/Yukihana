@@ -34,7 +34,7 @@ class PrefixCommand extends Command {
       category: "settings",
       examples: ["prefix", "prefix !", "setprefix $", "prefix ?"],
       cooldown: 1,
-      userPermissions: [PermissionFlagsBits.Administrator],
+      userPermissions: [PermissionFlagsBits.ManageMessages],
       permissions: [PermissionFlagsBits.SendMessages],
       enabledSlash: true,
       slashData: {

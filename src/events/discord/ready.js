@@ -210,7 +210,8 @@ async function connect247Guild(client, guildData) {
       selfDeaf: true,
       volume: db.guild.getDefaultVolume(guild.id),
     });
-    if (!player.connected) {
+    const isconnected = guild.members.me.voice.channelId === voiceChannel.id;
+    if (!isconnected) {
       await player.connect();
     }
     player.set("247Mode", true);

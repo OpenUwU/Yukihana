@@ -31,7 +31,7 @@ class SetDefaultVolumeCommand extends Command {
         "defaultvolume 25"
       ],
       cooldown: 3,
-      userPermissions: [PermissionFlagsBits.Administrator],
+      userPermissions: [PermissionFlagsBits.ManageMessages],
       permissions: [PermissionFlagsBits.SendMessages],
       enabledSlash: true,
       slashData: {

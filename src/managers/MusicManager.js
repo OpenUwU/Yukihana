@@ -327,7 +327,11 @@ export class MusicManager {
   }
   async is247ModeEnabled(guildId) {
     const settings = db.guild.get247Settings(guildId);
-    return Boolean(settings && settings.enabled);
+    if (settings.enabled === true) {
+      return true
+    } else {
+      return
+    }
   }
   parsePlayerOptions(options) {
     if (options.guildId && options.textChannelId && options.voiceChannelId) {

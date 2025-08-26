@@ -10,6 +10,7 @@ import {
 
 import { config } from "#config/config";
 import { Command } from "#structures/classes/Command";
+import emoji from "#config/emoji";
 
 class StopCommand extends Command {
   constructor() {
@@ -44,11 +45,14 @@ class StopCommand extends Command {
   async _handleStop(context, pm) {
     const wasPlaying = pm.currentTrack;
     const queueLength = pm.queueSize;
+    const is247Enabled = await pm.is247ModeEnabled()
+    
 
     const lastTrackInfo = wasPlaying
       ? {
           title: wasPlaying.info.title,
-          uri: wasPlaying.info.uri,
+          author: wasPlaying.info.author || "Unknown",
+          duration: this._formatDuration(wasPlaying.info.duration),
           artworkUrl:
             wasPlaying.info.artworkUrl || config.assets.defaultTrackArtwork,
         }
@@ -57,50 +61,87 @@ class StopCommand extends Command {
     await pm.stop();
 
     const container = new ContainerBuilder();
+
     container.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent("### Playback Stopped"),
+      new TextDisplayBuilder().setContent(
+        `${emoji.get("music")} **${is247Enabled ? "Queue Cleared" : "Playback Stopped"}**`,
+      ),
     );
+
     container.addSeparatorComponents(
       new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
     );
 
-    const section = new SectionBuilder();
-    if (!pm.is247ModeEnabled) {
-      let description = "I have left the voice channel.";
-      if (queueLength > 0) {
-        description = `The queue was cleared of ${queueLength} track${queueLength === 1 ? "" : "s"}.`;
-        section.addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(description),
-        );
-      }
+    let content;
+    if (is247Enabled === true) {
+      content =
+        `**247 Mode Active**\n\n` +
+        `├─ **${emoji.get("info")} Status:** Queue cleared, staying connected\n` +
+        `├─ **${emoji.get("folder")} Queue:** ${queueLength > 0 ? `Removed ${queueLength} track${queueLength === 1 ? "" : "s"}` : "Was already empty"}\n` +
+        `├─ **${emoji.get("check")} Connection:** Maintained in voice channel\n` +
+        `└─ **${emoji.get("reset")} Action:** Use /247 disable to allow disconnection\n\n` +
+        `*Bot will remain connected due to 247 mode*`;
     } else {
-      let description =
-        "I Cant leave the voice channel as 247 is enabled first use /247 disable then use stop command.";
-      section.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(description),
-      );
+      content =
+        `**Playback Information**\n\n` +
+        `├─ **${emoji.get("check")} Status:** Successfully stopped\n` +
+        `├─ **${emoji.get("folder")} Queue:** ${queueLength > 0 ? `Cleared ${queueLength} track${queueLength === 1 ? "" : "s"}` : "Was empty"}\n` +
+        `├─ **${emoji.get("reset")} Connection:** Disconnected from voice\n` +
+        `└─ **${emoji.get("info")} Action:** Playback completely stopped\n\n` +
+        `*Bot has left the voice channel*`;
     }
+
+    container.addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+        .setThumbnailAccessory(
+          new ThumbnailBuilder().setURL(
+            lastTrackInfo
+              ? lastTrackInfo.artworkUrl
+              : config.assets?.defaultThumbnail ||
+                  config.assets?.defaultTrackArtwork,
+          ),
+        ),
+    );
 
     if (lastTrackInfo) {
-      section.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(
-          `**Last Track:** [${lastTrackInfo.title}](${lastTrackInfo.uri})`,
-        ),
+      container.addSeparatorComponents(
+        new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
       );
-      section.setThumbnailAccessory(
-        new ThumbnailBuilder().setURL(
-          lastTrackInfo.artworkUrl || config.assets.defaultTrackArtwork,
-        ),
-      );
-    } else {
-      section.setThumbnailAccessory(
-        new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
+
+      const lastTrackContent =
+        `**Last Track**\n\n` +
+        `├─ **${emoji.get("music")} Title:** ${lastTrackInfo.title}\n` +
+        `├─ **${emoji.get("folder")} Artist:** ${lastTrackInfo.author}\n` +
+        `├─ **${emoji.get("info")} Duration:** ${lastTrackInfo.duration}\n` +
+        `└─ **${emoji.get("check")} Status:** ${is247Enabled ? "Cleared from queue" : "Stopped playing"}\n\n` +
+        `*Track information from last playback*`;
+
+      container.addSectionComponents(
+        new SectionBuilder()
+          .addTextDisplayComponents(
+            new TextDisplayBuilder().setContent(lastTrackContent),
+          )
+          .setThumbnailAccessory(
+            new ThumbnailBuilder().setURL(lastTrackInfo.artworkUrl),
+          ),
       );
     }
 
-    container.addSectionComponents(section);
-
     return this._reply(context, container);
+  }
+
+  _formatDuration(ms) {
+    if (!ms || ms < 0) return "Live";
+    const seconds = Math.floor((ms / 1000) % 60)
+      .toString()
+      .padStart(2, "0");
+    const minutes = Math.floor((ms / (1000 * 60)) % 60)
+      .toString()
+      .padStart(2, "0");
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    if (hours > 0) return `${hours}:${minutes}:${seconds}`;
+    return `${minutes}:${seconds}`;
   }
 
   async _reply(context, container) {

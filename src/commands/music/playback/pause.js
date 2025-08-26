@@ -10,6 +10,7 @@ import {
 
 import { config } from '#config/config';
 import { Command } from '#structures/classes/Command';
+import emoji from '#config/emoji';
 
 class PauseCommand extends Command {
   constructor() {
@@ -51,31 +52,77 @@ class PauseCommand extends Command {
 
     await pm.pause();
 
-    const container   =new ContainerBuilder();
-    container.addTextDisplayComponents(new TextDisplayBuilder().setContent('### Player Paused'));
-    container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
-
+    const container = new ContainerBuilder();
     const { currentTrack } = pm;
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get('music')} **Player Paused**`)
+    );
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    const content = `**Track Information**\n\n` +
+      `├─ **${emoji.get('music')} Title:** ${currentTrack.info.title}\n` +
+      `├─ **${emoji.get('folder')} Artist:** ${currentTrack.info.author || 'Unknown'}\n` +
+      `├─ **${emoji.get('info')} Duration:** ${this._formatDuration(currentTrack.info.duration)}\n` +
+      `└─ **${emoji.get('check')} Status:** Playback paused\n\n` +
+      `*Track has been paused successfully*`;
+
     container.addSectionComponents(
       new SectionBuilder()
         .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent('**Playback Paused**'),
-          new TextDisplayBuilder().setContent(`*[${currentTrack.info.title}](${currentTrack.info.uri}) has been paused*`),
+          new TextDisplayBuilder().setContent(content)
         )
-        .setThumbnailAccessory(new ThumbnailBuilder().setURL(currentTrack?.info?.artworkUrl || config.assets.defaultTrackArtwork)),
+        .setThumbnailAccessory(
+          new ThumbnailBuilder().setURL(currentTrack?.info?.artworkUrl || config.assets.defaultTrackArtwork)
+        )
     );
 
     return this._reply(context, container);
   }
 
+  _formatDuration(ms) {
+    if (!ms || ms < 0) return 'Live';
+    const seconds = Math.floor((ms / 1000) % 60).toString().padStart(2, '0');
+    const minutes = Math.floor((ms / (1000 * 60)) % 60).toString().padStart(2, '0');
+    const hours = Math.floor(ms / (1000 * 60 * 60));
+    if (hours > 0) return `${hours}:${minutes}:${seconds}`;
+    return `${minutes}:${seconds}`;
+  }
+
   _createErrorContainer(message) {
-    return new ContainerBuilder().addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`**Error**\n*${message}*`),
+    const container = new ContainerBuilder();
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get('cross')} **Error**`)
     );
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    const content = `**Something went wrong**\n\n` +
+      `├─ **${emoji.get('info')} Issue:** ${message}\n` +
+      `└─ **${emoji.get('reset')} Action:** Try again or contact support\n\n` +
+      `*Please check your input and try again*`;
+
+    container.addSectionComponents(
+      new SectionBuilder()
+        .addTextDisplayComponents(
+          new TextDisplayBuilder().setContent(content)
+        )
+        .setThumbnailAccessory(
+          new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork)
+        )
+    );
+
+    return container;
   }
 
   async _reply(context, container) {
-    const payload   ={
+    const payload = {
       components: [container],
       flags: MessageFlags.IsComponentsV2,
     };
@@ -85,5 +132,6 @@ class PauseCommand extends Command {
     return context.channel.send(payload);
   }
 }
+
 
 export default new PauseCommand();

@@ -50,7 +50,7 @@ export class PlayerManager {
   }
 
   async playPrevious() {
-    const previousTrack = this.player.queue.previous.pop();
+    const previousTrack = await this.player.queue.shiftPrevious()
     if (!previousTrack) {
       logger?.warn(
         `[PlayerManager] No previous track to play for guild ${this.guildId}.`,
@@ -58,11 +58,7 @@ export class PlayerManager {
       return false;
     }
 
-    const currentTrack = this.player.queue.current;
-    if (currentTrack) {
-      this.player.queue.tracks.unshift(currentTrack);
-    }
-
+    
     await this.player.play({ clientTrack: previousTrack });
     await this.player.queue.utils.save();
     return true;
@@ -78,11 +74,11 @@ export class PlayerManager {
     return this;
   }
 
-  async stop(clearQueue = true, executeAutoplay = false) {
+  async stop() {
     const { guildId } = this.player;
-    const guild247Settings = db.guild.get247Settings(guildId);
+    const is247ModeEnabled = await this.is247ModeEnabled(guildId);
 
-    if (!guild247Settings.enabled || !guild247Settings.voiceChannel) {
+    if (!is247ModeEnabled) {
       this.player.destroy("Stop command", true);
       return;
     }
@@ -90,9 +86,10 @@ export class PlayerManager {
 
     if (autoplayEnabled) {
       this.player.set("autoplayEnabled", false);
-      await this.player.stopPlaying(clearQueue, executeAutoplay);
+     
     }
-
+  // await  this.player.queue.tracks.splice(0, this.player.queue.tracks.length);
+    await this.player.stopPlaying()
     return this;
   }
 
@@ -101,7 +98,7 @@ export class PlayerManager {
     const { current } = player.queue;
     const duration = current?.info?.duration ?? 0;
 
-    if (!this.isEmpty) {
+    if (this.queueSize > 0) {
       await player.skip(amount);
     } else if (player.repeatMode === "track" && duration > 0) {
       await player.seek(duration);
@@ -125,7 +122,14 @@ export class PlayerManager {
 
   async is247ModeEnabled() {
     const settings = db.guild.get247Settings(this.guildId);
-    return Boolean(settings && settings.enabled);
+    
+    if (settings.enabled === true) {
+      
+      return true
+    
+    } else {
+      return 
+    }
   }
 
   setData(key, value) {

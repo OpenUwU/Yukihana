@@ -31,7 +31,7 @@ class Stay247Command extends Command {
         "247 off"
       ],
       cooldown: 5,
-      userPermissions: [PermissionFlagsBits.ManageGuild],
+      userPermissions: [PermissionFlagsBits.ManageMessages],
       botPermissions: [PermissionFlagsBits.Connect, PermissionFlagsBits.Speak],
       enabledSlash: true,
       slashData: {

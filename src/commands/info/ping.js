@@ -51,11 +51,21 @@ class PingCommand extends Command {
 
 			this._setupCollector(pingMessage, message.author.id, client);
 		} catch (error) {
-			client.logger?.error("PingCommand", `Error in prefix command: ${error.message}`, error);
-			await message.reply({
-				components: [this._createErrorContainer("An error occurred while checking ping.")],
-				flags: MessageFlags.IsComponentsV2,
-			}).catch(() => {});
+			client.logger?.error(
+				"PingCommand",
+				`Error in prefix command: ${error.message}`,
+				error,
+			);
+			await message
+				.reply({
+					components: [
+						this._createErrorContainer(
+							"An error occurred while checking ping.",
+						),
+					],
+					flags: MessageFlags.IsComponentsV2,
+				})
+				.catch(() => {});
 		}
 	}
 
@@ -79,12 +89,29 @@ class PingCommand extends Command {
 
 			this._setupCollector(pingMessage, interaction.user.id, client);
 		} catch (error) {
-			client.logger?.error("PingCommand", `Error in slash command: ${error.message}`, error);
+			client.logger?.error(
+				"PingCommand",
+				`Error in slash command: ${error.message}`,
+				error,
+			);
 			try {
 				if (interaction.replied || interaction.deferred) {
-					await interaction.editReply({ components: [this._createErrorContainer("An error occurred while checking ping.")] });
+					await interaction.editReply({
+						components: [
+							this._createErrorContainer(
+								"An error occurred while checking ping.",
+							),
+						],
+					});
 				} else {
-					await interaction.reply({ components: [this._createErrorContainer("An error occurred while checking ping.")], ephemeral: true });
+					await interaction.reply({
+						components: [
+							this._createErrorContainer(
+								"An error occurred while checking ping.",
+							),
+						],
+						ephemeral: true,
+					});
 				}
 			} catch (e) {}
 		}
@@ -94,23 +121,29 @@ class PingCommand extends Command {
 		const container = new ContainerBuilder();
 
 		container.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(`${emoji.get("info")} **Checking Latency**`)
+			new TextDisplayBuilder().setContent(
+				`${emoji.get("info")} **Checking Latency**`,
+			),
 		);
 
 		container.addSeparatorComponents(
-			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
 		);
 
 		const content = `Calculating ping...`;
 
 		const section = new SectionBuilder()
 			.addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
-			.setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork));
+			.setThumbnailAccessory(
+				new ThumbnailBuilder().setURL(
+					config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork,
+				),
+			);
 
 		container.addSectionComponents(section);
 
 		container.addSeparatorComponents(
-			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
 		);
 
 		return container;
@@ -120,17 +153,18 @@ class PingCommand extends Command {
 		const container = new ContainerBuilder();
 
 		container.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(`${emoji.get("check")} **Pong!**`)
+			new TextDisplayBuilder().setContent(`${emoji.get("check")} **Pong!**`),
 		);
 
 		container.addSeparatorComponents(
-			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
 		);
 
 		const wsLatency = client.ws.ping;
 		const uptime = this._formatUptime(client.uptime);
 
-		const content = `**Latency Information:**\n` +
+		const content =
+			`**Latency Information:**\n` +
 			`├─ **WebSocket Ping:** ${wsLatency}ms\n` +
 			`├─ **Message Latency:** ${messageLatency}ms\n` +
 			`└─ **Total Response:** ${wsLatency + messageLatency}ms\n\n` +
@@ -141,20 +175,24 @@ class PingCommand extends Command {
 
 		const section = new SectionBuilder()
 			.addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
-			.setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork));
+			.setThumbnailAccessory(
+				new ThumbnailBuilder().setURL(
+					config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork,
+				),
+			);
 
 		container.addSectionComponents(section);
 
 		container.addSeparatorComponents(
-			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
 		);
 
 		const buttonRow = new ActionRowBuilder().addComponents(
 			new ButtonBuilder()
-				.setCustomId('ping_refresh')
-				.setLabel('Refresh')
+				.setCustomId("ping_refresh")
+				.setLabel("Refresh")
 				.setStyle(ButtonStyle.Secondary)
-				.setEmoji(emoji.get("reset"))
+				.setEmoji(emoji.get("reset")),
 		);
 
 		container.addActionRowComponents(buttonRow);
@@ -166,21 +204,25 @@ class PingCommand extends Command {
 		const container = new ContainerBuilder();
 
 		container.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(`${emoji.get("cross")} **Error**`)
+			new TextDisplayBuilder().setContent(`${emoji.get("cross")} **Error**`),
 		);
 
 		container.addSeparatorComponents(
-			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
 		);
 
 		const section = new SectionBuilder()
 			.addTextDisplayComponents(new TextDisplayBuilder().setContent(message))
-			.setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork));
+			.setThumbnailAccessory(
+				new ThumbnailBuilder().setURL(
+					config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork,
+				),
+			);
 
 		container.addSectionComponents(section);
 
 		container.addSeparatorComponents(
-			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
 		);
 
 		return container;
@@ -201,12 +243,12 @@ class PingCommand extends Command {
 	_setupCollector(message, userId, client) {
 		const collector = message.createMessageComponentCollector({
 			filter: (i) => i.user.id === userId,
-			time: 300_000
+			time: 300_000,
 		});
 
-		collector.on('collect', async (interaction) => {
+		collector.on("collect", async (interaction) => {
 			try {
-				if (interaction.customId === 'ping_refresh') {
+				if (interaction.customId === "ping_refresh") {
 					const startTime = Date.now();
 
 					await interaction.update({
@@ -223,21 +265,29 @@ class PingCommand extends Command {
 					});
 				}
 			} catch (error) {
-				client.logger?.error("PingCommand", `Error in collector: ${error.message}`, error);
+				client.logger?.error(
+					"PingCommand",
+					`Error in collector: ${error.message}`,
+					error,
+				);
 			}
 		});
 
-		collector.on('end', async () => {
+		collector.on("end", async () => {
 			try {
 				const fetchedMessage = await message.fetch().catch(() => null);
 				if (fetchedMessage?.components.length > 0) {
 					await fetchedMessage.edit({
-						components: [this._createDisabledContainer(client)]
+						components: [this._createDisabledContainer(client)],
 					});
 				}
 			} catch (error) {
 				if (error.code !== 10008) {
-					client.logger?.error("PingCommand", `Error updating expired components: ${error.message}`, error);
+					client.logger?.error(
+						"PingCommand",
+						`Error updating expired components: ${error.message}`,
+						error,
+					);
 				}
 			}
 		});
@@ -247,17 +297,18 @@ class PingCommand extends Command {
 		const container = new ContainerBuilder();
 
 		container.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(`${emoji.get("check")} **Pong!**`)
+			new TextDisplayBuilder().setContent(`${emoji.get("check")} **Pong!**`),
 		);
 
 		container.addSeparatorComponents(
-			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
 		);
 
 		const wsLatency = client.ws.ping;
 		const uptime = this._formatUptime(client.uptime);
 
-		const content = `**Latency Information:**\n` +
+		const content =
+			`**Latency Information:**\n` +
 			`├─ **WebSocket Ping:** ${wsLatency}ms\n` +
 			`├─ **Message Latency:** Expired\n` +
 			`└─ **Total Response:** ${wsLatency}ms\n\n` +
@@ -269,12 +320,16 @@ class PingCommand extends Command {
 
 		const section = new SectionBuilder()
 			.addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
-			.setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork));
+			.setThumbnailAccessory(
+				new ThumbnailBuilder().setURL(
+					config.assets?.defaultThumbnail || config.assets?.defaultTrackArtwork,
+				),
+			);
 
 		container.addSectionComponents(section);
 
 		container.addSeparatorComponents(
-			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+			new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
 		);
 
 		return container;

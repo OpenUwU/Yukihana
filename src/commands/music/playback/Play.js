@@ -1058,9 +1058,6 @@ class PlayCommand extends Command {
     });
   }
 
-  /**
-   * Recursively disable all interactive components in the message
-   */
   async _disableAllComponents(message, client) {
     try {
       const disabledComponents = this._processComponents(message.components);
@@ -1123,9 +1120,6 @@ class PlayCommand extends Command {
     });
   }
 
-  /**
-   * Handle errors when disabling components
-   */
   _handleDisableError(error, client, reason) {
     if (error.code === 10008) {
       // Unknown Message

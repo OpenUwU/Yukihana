@@ -11,6 +11,11 @@ import {
   StringSelectMenuBuilder,
   TextDisplayBuilder,
   ThumbnailBuilder,
+  ComponentType,
+  UserSelectMenuBuilder,
+  RoleSelectMenuBuilder,
+  ChannelSelectMenuBuilder,
+  MentionableSelectMenuBuilder,
 } from "discord.js";
 import { config } from "#config/config";
 import emoji from "#config/emoji";
@@ -343,7 +348,9 @@ class HelpCommand extends Command {
             ephemeral: true,
           });
         }
-      } catch (e) {}
+      } catch (e) {
+        logger.error("HelpCommand", "Failed to send error response:", e);
+      }
     }
   }
 
@@ -388,7 +395,7 @@ class HelpCommand extends Command {
 
       container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          `### ${emoji.get("info")} Help Menu`,
+          `${emoji.get("info")} **Help Menu**`,
         ),
       );
 
@@ -396,13 +403,25 @@ class HelpCommand extends Command {
         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
       );
 
-      let content = `${emoji.get("info")} **Prefix Commands:** ${uniqueCommands.length}\n`;
+      let content = `**Bot Command Information**\n\n`;
+      content += `┌─ **${emoji.get("info")} Statistics**\n`;
+      content += `├─ Prefix Commands: ${uniqueCommands.length}\n`;
+      content += `├─ Slash Commands: ${slashCommands.length}\n`;
+      content += `└─ Categories: ${categoryArray.length}\n\n`;
 
-      content += `${emoji.get("info")} **Slash Commands:** ${slashCommands.length}\n\n`;
       content += `**Available Categories:**\n`;
 
-      categoryArray.forEach((category) => {
-        content += `${emoji.get("folder")} ${this._capitalize(category)}\n`;
+      categoryArray.forEach((category, index) => {
+        const isLast = index === categoryArray.length - 1;
+        const prefix = isLast ? "└─" : "├─";
+        const categoryCommands = categories.get(category) || [];
+        const subcats = subcategories.get(category);
+        const subcatCount = subcats ? subcats.size : 0;
+        const info = subcatCount > 0 
+          ? `${categoryCommands.length} commands, ${subcatCount} subcategories`
+          : `${categoryCommands.length} commands`;
+
+        content += `${prefix} **${emoji.get("folder")} ${this._capitalize(category)}** (${info})\n`;
       });
 
       const section = new SectionBuilder()
@@ -471,7 +490,7 @@ class HelpCommand extends Command {
 
       container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          `### ${emoji.get("info")} ${this._capitalize(category)} Commands`,
+          `${emoji.get("info")} **${this._capitalize(category)} Commands**`,
         ),
       );
 
@@ -479,9 +498,9 @@ class HelpCommand extends Command {
         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
       );
 
-      let content = `${emoji.get("folder")} **${this._capitalize(category)}**\n`;
+      let content = `**${this._capitalize(category)} Category**\n\n`;
 
-      // Get direct commands (not in subcategories)
+  
       const directCommands = commands.filter((cmd) => {
         if (!subcats) return true;
         for (const [, subcatCommands] of subcats) {
@@ -492,18 +511,25 @@ class HelpCommand extends Command {
         return true;
       });
 
-      // Add direct commands first
-      if (directCommands.length > 0) {
-        directCommands.forEach((cmd) => {
-          content += `├─ \`${cmd.name}\`\n`;
+    
+      const hasDirectCommands = directCommands.length > 0;
+      const hasSubcats = subcats && subcats.size > 0;
+      const subcatEntries = hasSubcats ? Array.from(subcats.entries()) : [];
+
+      
+      if (hasDirectCommands) {
+        directCommands.forEach((cmd, index) => {
+          const isLastDirect = index === directCommands.length - 1;
+          const isLastOverall = isLastDirect && !hasSubcats;
+          const prefix = isLastOverall ? "└─" : "├─";
+          content += `${prefix} \`${cmd.name}\` - ${cmd.description?.slice(0, 50) || "No description"}${cmd.description?.length > 50 ? "..." : ""}\n`;
         });
       }
 
-      // Add subcategories
-      if (subcats && subcats.size > 0) {
-        const subcatEntries = Array.from(subcats.entries());
-        subcatEntries.forEach(([subcatName, subcatCommands], index) => {
-          const isLastSubcat = index === subcatEntries.length - 1;
+      
+      if (hasSubcats) {
+        subcatEntries.forEach(([subcatName, subcatCommands], subcatIndex) => {
+          const isLastSubcat = subcatIndex === subcatEntries.length - 1;
           const subcatPrefix = isLastSubcat ? "└─" : "├─";
           const cmdPrefix = isLastSubcat ? "   " : "│  ";
 
@@ -512,7 +538,7 @@ class HelpCommand extends Command {
           subcatCommands.forEach((cmd, cmdIndex) => {
             const isLastCmd = cmdIndex === subcatCommands.length - 1;
             const cmdSymbol = isLastCmd ? "└─" : "├─";
-            content += `${cmdPrefix}${cmdSymbol} \`${cmd.name}\`\n`;
+            content += `${cmdPrefix}${cmdSymbol} \`${cmd.name}\` - ${cmd.description?.slice(0, 40) || "No description"}${cmd.description?.length > 40 ? "..." : ""}\n`;
           });
         });
       }
@@ -580,7 +606,7 @@ class HelpCommand extends Command {
 
       container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          `### ${emoji.get("info")} Command: ${command.name}`,
+          `${emoji.get("info")} **Command: ${command.name}**`,
         ),
       );
 
@@ -588,27 +614,31 @@ class HelpCommand extends Command {
         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
       );
 
-      let content = `${emoji.get("info")} **Description:** ${command.description || "No description provided."}\n`;
-      content += `${emoji.get("info")} **Usage:** \`${command.usage || command.name}\`\n`;
-      content += `${emoji.get("info")} **Category:** ${this._capitalize(command.category || "misc")}\n`;
-      content += `${emoji.get("info")} **Cooldown:** ${command.cooldown || 3}s\n`;
+      let content = `**Command Information**\n\n`;
+      content += `┌─ **${emoji.get("info")} Basic Info**\n`;
+      content += `├─ Description: ${command.description || "No description provided"}\n`;
+      content += `├─ Usage: \`${command.usage || command.name}\`\n`;
+      content += `├─ Category: ${this._capitalize(command.category || "misc")}\n`;
+      content += `└─ Cooldown: ${command.cooldown || 3}s\n\n`;
 
       if (command.aliases?.length) {
-        content += `${emoji.get("info")} **Aliases:**\n`;
+        content += `**Aliases:**\n`;
         command.aliases.forEach((a, i) => {
           const isLast = i === command.aliases.length - 1;
           const prefix = isLast ? "└─" : "├─";
           content += `${prefix} \`${a}\`\n`;
         });
+        content += "\n";
       }
 
       if (command.examples?.length) {
-        content += `${emoji.get("info")} **Examples:**\n`;
+        content += `**Examples:**\n`;
         command.examples.forEach((ex, i) => {
           const isLast = i === command.examples.length - 1;
           const prefix = isLast ? "└─" : "├─";
           content += `${prefix} \`${ex}\`\n`;
         });
+        content += "\n";
       }
 
       const requirements = [];
@@ -629,7 +659,7 @@ class HelpCommand extends Command {
         requirements.push(`Bot Permissions: ${command.permissions.join(", ")}`);
 
       if (requirements.length) {
-        content += `${emoji.get("info")} **Requirements:**\n`;
+        content += `**Requirements:**\n`;
         requirements.forEach((req, i) => {
           const isLast = i === requirements.length - 1;
           const prefix = isLast ? "└─" : "├─";
@@ -695,7 +725,7 @@ class HelpCommand extends Command {
 
       container.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          `### ${emoji.get("info")} Slash Command: ${command.name}`,
+          `${emoji.get("info")} **Slash Command: ${command.name}**`,
         ),
       );
 
@@ -706,11 +736,13 @@ class HelpCommand extends Command {
       const slashName = Array.isArray(command.slashData.name)
         ? `/${command.slashData.name.join(" ")}`
         : `/${command.slashData.name}`;
-      let content = `${emoji.get("info")} **Slash Command:** \`${slashName}\`\n`;
-      content += `${emoji.get("info")} **Description:** ${command.slashData.description}\n`;
+
+      let content = `**Slash Command Information**\n\n`;
+      content += `┌─ **Command:** \`${slashName}\`\n`;
+      content += `└─ **Description:** ${command.slashData.description}\n\n`;
 
       if (command.slashData.options?.length) {
-        content += `${emoji.get("info")} **Options:**\n`;
+        content += `**Options:**\n`;
         command.slashData.options.forEach((option, i) => {
           const required = option.required ? " (Required)" : " (Optional)";
           const isLast = i === command.slashData.options.length - 1;
@@ -775,18 +807,18 @@ class HelpCommand extends Command {
       const container = new ContainerBuilder();
 
       container.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent(`### ${emoji.get("cross")} Error`),
+        new TextDisplayBuilder().setContent(`${emoji.get("cross")} **Error**`),
       );
 
       container.addSeparatorComponents(
         new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small),
       );
 
+      const content = `**Something went wrong**\n\n┌─ **${emoji.get("info")} Issue:** ${message}\n└─ **${emoji.get("reset")} Action:** Try again or contact support\n\n*Please check your input and try again*`;
+
       const section = new SectionBuilder()
         .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(
-            message || "An unknown error occurred.",
-          ),
+          new TextDisplayBuilder().setContent(content),
         )
         .setThumbnailAccessory(
           new ThumbnailBuilder().setURL(
@@ -806,7 +838,7 @@ class HelpCommand extends Command {
       const fallbackContainer = new ContainerBuilder();
       fallbackContainer.addTextDisplayComponents(
         new TextDisplayBuilder().setContent(
-          `### ${emoji.get("cross")} Error\n*Help system unavailable*`,
+          `${emoji.get("cross")} **Error**\n*Help system unavailable*`,
         ),
       );
       return fallbackContainer;
@@ -878,7 +910,7 @@ class HelpCommand extends Command {
           await interaction.deferUpdate();
 
           if (interaction.customId === "help_close") {
-            await interaction.deleteReply();
+            await interaction.deleteReply().catch(() => {});
             collector.stop();
             return;
           }
@@ -977,37 +1009,176 @@ class HelpCommand extends Command {
             `Error in collector: ${error.message}`,
             error,
           );
-        }
-      });
 
-      collector.on("end", async () => {
-        try {
-          const fetchedMessage = await message.fetch().catch(() => null);
-          if (fetchedMessage?.components.length > 0) {
-            const disabledComponents = fetchedMessage.components.map((row) => {
-              const newRow = ActionRowBuilder.from(row);
-              newRow.components.forEach((component) => {
-                if (component.data.style !== ButtonStyle.Link) {
-                  component.setDisabled(true);
-                }
-              });
-              return newRow;
+          try {
+            await interaction.followUp({
+              content: "An error occurred while processing your request. Please try again.",
+              ephemeral: true,
             });
-            await fetchedMessage.edit({ components: disabledComponents });
-          }
-        } catch (error) {
-          if (error.code !== 10008 && error.code !== 10003) {
+          } catch (followUpError) {
             client?.logger?.error(
               "HelpCommand",
-              `Error cleaning up collector: ${error.message}`,
-              error,
+              `Error sending followup: ${followUpError.message}`,
             );
           }
         }
       });
+
+      collector.on("end", async (collected, reason) => {
+        if (reason === "limit" || reason === "messageDelete") return;
+
+        try {
+          const currentMessage = await this._fetchMessage(message).catch(
+            () => null,
+          );
+
+          if (!currentMessage?.components?.length) {
+            client?.logger?.debug(
+              "HelpCommand",
+              "No message or components found for disabling",
+            );
+            return;
+          }
+
+          const success = await this._disableAllComponents(
+            currentMessage,
+            client,
+          );
+
+          if (success) {
+            client?.logger?.debug(
+              "HelpCommand",
+              `Components disabled successfully. Reason: ${reason}`,
+            );
+          }
+        } catch (error) {
+          this._handleDisableError(error, client, reason);
+        }
+      });
+
+      collector.on("dispose", async (interaction) => {
+        client?.logger?.debug(
+          "HelpCommand",
+          `Interaction disposed: ${interaction.customId}`,
+        );
+      });
     } catch (error) {
       logger.error("HelpCommand", "Error setting up collector:", error);
     }
+  }
+
+  async _disableAllComponents(message, client) {
+    try {
+      const disabledComponents = this._processComponents(message.components);
+
+      await message.edit({
+        components: disabledComponents,
+        flags: MessageFlags.IsComponentsV2,
+      });
+
+      return true;
+    } catch (error) {
+      client?.logger?.error(
+        "HelpCommand",
+        `Failed to disable components: ${error.message}`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  _processComponents(components) {
+    return components.map((component) => {
+      if (component.type === ComponentType.ActionRow) {
+        return {
+          ...component.toJSON(),
+          components: component.components.map((subComponent) => ({
+            ...subComponent.toJSON(),
+            disabled: true,
+          })),
+        };
+      }
+
+      if (component.type === ComponentType.Container) {
+        return {
+          ...component.toJSON(),
+          components: this._processComponents(component.components),
+        };
+      }
+
+      if (component.type === ComponentType.Section) {
+        const processedComponent = {
+          ...component.toJSON(),
+          components: this._processComponents(component.components),
+        };
+
+        if (
+          component.accessory &&
+          component.accessory.type === ComponentType.Button
+        ) {
+          processedComponent.accessory = {
+            ...component.accessory.toJSON(),
+            disabled: true,
+          };
+        }
+
+        return processedComponent;
+      }
+
+      return component.toJSON();
+    });
+  }
+
+  _handleDisableError(error, client, reason) {
+    if (error.code === 10008) {
+      // Unknown Message
+      client?.logger?.debug(
+        "HelpCommand",
+        `Message was deleted, cannot disable components. Reason: ${reason}`,
+      );
+    } else if (error.code === 50001) {
+      // Missing Access
+      client?.logger?.warn(
+        "HelpCommand",
+        `Missing permissions to edit message. Reason: ${reason}`,
+      );
+    } else {
+      client?.logger?.error(
+        "HelpCommand",
+        `Error disabling components: ${error.message}. Reason: ${reason}`,
+        error,
+      );
+    }
+  }
+
+  async _fetchMessage(messageOrInteraction) {
+    if (messageOrInteraction.fetchReply) {
+      return await messageOrInteraction.fetchReply();
+    } else if (messageOrInteraction.fetch) {
+      return await messageOrInteraction.fetch();
+    } else {
+      return messageOrInteraction;
+    }
+  }
+
+  _shouldDisableComponent(component) {
+    const selectMenuTypes = [
+      StringSelectMenuBuilder,
+      UserSelectMenuBuilder,
+      RoleSelectMenuBuilder,
+      ChannelSelectMenuBuilder,
+      MentionableSelectMenuBuilder,
+    ];
+
+    if (selectMenuTypes.some((type) => component instanceof type)) {
+      return true;
+    }
+
+    if (component instanceof ButtonBuilder) {
+      return component.data.style !== ButtonStyle.Link;
+    }
+
+    return false;
   }
 
   _capitalize(str) {

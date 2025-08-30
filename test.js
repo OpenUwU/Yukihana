@@ -5,7 +5,7 @@ import {
 	ActionRowBuilder,
 	ButtonBuilder,
 	ButtonStyle,
-	AttachmentBuilder
+	AttachmentBuilder,
 } from 'discord.js';
 import { inspect } from 'util';
 import { createCanvas } from '@napi-rs/canvas';
@@ -19,8 +19,8 @@ class Shikamori {
 				GatewayIntentBits.Guilds,
 				GatewayIntentBits.GuildMessages,
 				GatewayIntentBits.MessageContent,
-				GatewayIntentBits.GuildMembers
-			]
+				GatewayIntentBits.GuildMembers,
+			],
 		});
 
 		this.paginationData = new Map();
@@ -32,8 +32,9 @@ class Shikamori {
 			console.log(`Shikamori ready as ${this.client.user.tag}`);
 		});
 
-		this.client.on(Events.MessageCreate, async (message) => {
-			if (message.author.bot || message.author.id !== AUTHORIZED_USER) return;
+		this.client.on(Events.MessageCreate, async message => {
+			if (message.author.bot || message.author.id !== AUTHORIZED_USER)
+				return;
 
 			const content = message.content.toLowerCase();
 
@@ -54,8 +55,11 @@ class Shikamori {
 			}
 		});
 
-		this.client.on(Events.InteractionCreate, async (interaction) => {
-			if (interaction.isButton() && interaction.user.id === AUTHORIZED_USER) {
+		this.client.on(Events.InteractionCreate, async interaction => {
+			if (
+				interaction.isButton() &&
+				interaction.user.id === AUTHORIZED_USER
+			) {
 				await this.handlePagination(interaction);
 			}
 		});
@@ -65,8 +69,14 @@ class Shikamori {
 		const code = message.content.slice(5);
 
 		try {
-			const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
-			const func = new AsyncFunction('client', 'message', `return ${code}`);
+			const AsyncFunction = Object.getPrototypeOf(
+				async function () {},
+			).constructor;
+			const func = new AsyncFunction(
+				'client',
+				'message',
+				`return ${code}`,
+			);
 			let result = await func(this.client, message);
 
 			const output = inspect(result, { depth: 3, maxStringLength: 2000 });
@@ -101,24 +111,34 @@ class Shikamori {
 			let content = `**User: ${targetUser.tag}**\n\`\`\`json\n${userJSON}\`\`\``;
 
 			if (targetUser.displayAvatarURL()) {
-				content += `\n**Avatar:** ${targetUser.displayAvatarURL({ size: 1024 })}`;
+				content += `\n**Avatar:** ${targetUser.displayAvatarURL({
+					size: 1024,
+				})}`;
 			}
 
 			if (targetUser.bannerURL) {
-				content += `\n**Banner:** ${targetUser.bannerURL({ size: 1024 })}`;
+				content += `\n**Banner:** ${targetUser.bannerURL({
+					size: 1024,
+				})}`;
 			}
-			if(targetUser.avatarDecorationURL){
-				content += `\n**Avatar Decoration:** ${targetUser.avatarDecorationURL({ size: 1024 })}`;
+			if (targetUser.avatarDecorationURL) {
+				content += `\n**Avatar Decoration:** ${targetUser.avatarDecorationURL(
+					{ size: 1024 },
+				)}`;
 			}
- if(targetUser.guildTagBadgeURL){
-	 content += `\n**Guild Tag Badge:** ${targetUser.guildTagBadgeURL({ size: 1024 })}`;
- }
-			if(targetUser.primaryGuild){
+			if (targetUser.guildTagBadgeURL) {
+				content += `\n**Guild Tag Badge:** ${targetUser.guildTagBadgeURL(
+					{ size: 1024 },
+				)}`;
+			}
+			if (targetUser.primaryGuild) {
 				content += `\n**Guild tag:** ${targetUser.primaryGuild.tag}`;
 				content += `\n**Guild id:** ${targetUser.primaryGuild.identityGuildId}`;
 			}
-			if(targetUser.collectibles){
-				if(targetUser.collectibles.asset){content += `\n**Collectibles Nameplate:** ${targetUser.collectibles.nameplate.asset}`;}
+			if (targetUser.collectibles) {
+				if (targetUser.collectibles.asset) {
+					content += `\n**Collectibles Nameplate:** ${targetUser.collectibles.nameplate.asset}`;
+				}
 			}
 			await this.sendPaginated(message, content, 'user');
 		} catch (error) {
@@ -150,18 +170,31 @@ class Shikamori {
 			const roleData = role.toJSON();
 			const colors = roleData.colors;
 
-			if (colors && (colors.primaryColor !== undefined || colors.primaryColor !== null)) {
+			if (
+				colors &&
+				(colors.primaryColor !== undefined ||
+					colors.primaryColor !== null)
+			) {
 				const canvas = createCanvas(800, 200);
 				const ctx = canvas.getContext('2d');
 
 				const availableColors = [];
-				if (colors.primaryColor !== null && colors.primaryColor !== undefined) {
+				if (
+					colors.primaryColor !== null &&
+					colors.primaryColor !== undefined
+				) {
 					availableColors.push(colors.primaryColor);
 				}
-				if (colors.secondaryColor !== null && colors.secondaryColor !== undefined) {
+				if (
+					colors.secondaryColor !== null &&
+					colors.secondaryColor !== undefined
+				) {
 					availableColors.push(colors.secondaryColor);
 				}
-				if (colors.tertiaryColor !== null && colors.tertiaryColor !== undefined) {
+				if (
+					colors.tertiaryColor !== null &&
+					colors.tertiaryColor !== undefined
+				) {
 					availableColors.push(colors.tertiaryColor);
 				}
 
@@ -197,21 +230,33 @@ class Shikamori {
 						ctx.strokeText(`${role.name}`, 400, 80);
 						ctx.fillText(`${role.name}`, 400, 80);
 
-						const colorText = availableColors.map(c => this.intToHex(c)).join(' → ');
+						const colorText = availableColors
+							.map(c => this.intToHex(c))
+							.join(' → ');
 						ctx.font = '16px Arial';
 						ctx.strokeText(`Colors: ${colorText}`, 400, 120);
 						ctx.fillText(`Colors: ${colorText}`, 400, 120);
 
-						ctx.strokeText(`Gradient Colors: ${availableColors.length}`, 400, 150);
-						ctx.fillText(`Gradient Colors: ${availableColors.length}`, 400, 150);
+						ctx.strokeText(
+							`Gradient Colors: ${availableColors.length}`,
+							400,
+							150,
+						);
+						ctx.fillText(
+							`Gradient Colors: ${availableColors.length}`,
+							400,
+							150,
+						);
 					}
 
 					const buffer = canvas.toBuffer('image/png');
-					const attachment = new AttachmentBuilder(buffer, { name: `role-gradient-${roleId}.png` });
+					const attachment = new AttachmentBuilder(buffer, {
+						name: `role-gradient-${roleId}.png`,
+					});
 
 					await message.reply({
 						content: content,
-						files: [attachment]
+						files: [attachment],
 					});
 				} else {
 					await this.sendPaginated(message, content, 'role');
@@ -253,13 +298,22 @@ class Shikamori {
 			const ctx = canvas.getContext('2d');
 
 			const availableColors = [];
-			if (colors.primaryColor !== null && colors.primaryColor !== undefined) {
+			if (
+				colors.primaryColor !== null &&
+				colors.primaryColor !== undefined
+			) {
 				availableColors.push(colors.primaryColor);
 			}
-			if (colors.secondaryColor !== null && colors.secondaryColor !== undefined) {
+			if (
+				colors.secondaryColor !== null &&
+				colors.secondaryColor !== undefined
+			) {
 				availableColors.push(colors.secondaryColor);
 			}
-			if (colors.tertiaryColor !== null && colors.tertiaryColor !== undefined) {
+			if (
+				colors.tertiaryColor !== null &&
+				colors.tertiaryColor !== undefined
+			) {
 				availableColors.push(colors.tertiaryColor);
 			}
 
@@ -298,23 +352,34 @@ class Shikamori {
 				ctx.strokeText(`${role.name}`, 400, 80);
 				ctx.fillText(`${role.name}`, 400, 80);
 
-				const colorText = availableColors.map(c => this.intToHex(c)).join(' → ');
+				const colorText = availableColors
+					.map(c => this.intToHex(c))
+					.join(' → ');
 				ctx.font = '16px Arial';
 				ctx.strokeText(`Colors: ${colorText}`, 400, 120);
 				ctx.fillText(`Colors: ${colorText}`, 400, 120);
 
-				ctx.strokeText(`Gradient Colors: ${availableColors.length}`, 400, 150);
-				ctx.fillText(`Gradient Colors: ${availableColors.length}`, 400, 150);
+				ctx.strokeText(
+					`Gradient Colors: ${availableColors.length}`,
+					400,
+					150,
+				);
+				ctx.fillText(
+					`Gradient Colors: ${availableColors.length}`,
+					400,
+					150,
+				);
 			}
 
 			const buffer = canvas.toBuffer('image/png');
-			const attachment = new AttachmentBuilder(buffer, { name: `gradient-${roleId}.png` });
+			const attachment = new AttachmentBuilder(buffer, {
+				name: `gradient-${roleId}.png`,
+			});
 
 			await message.reply({
 				content: `**Gradient for role: ${role.name}**`,
-				files: [attachment]
+				files: [attachment],
 			});
-
 		} catch (error) {
 			await message.reply(`Error: ${error.message}`);
 		}
@@ -381,13 +446,17 @@ class Shikamori {
 			pages,
 			currentPage: 0,
 			type,
-			userId: message.author.id
+			userId: message.author.id,
 		});
 
-		const buttons = this.createPaginationButtons(messageId, 0, pages.length);
+		const buttons = this.createPaginationButtons(
+			messageId,
+			0,
+			pages.length,
+		);
 		const reply = await message.reply({
 			content: `${pages[0]}\n\n**Page 1 of ${pages.length}**`,
-			components: pages.length > 1 ? [buttons] : []
+			components: pages.length > 1 ? [buttons] : [],
 		});
 
 		this.paginationData.get(messageId).messageId = reply.id;
@@ -398,29 +467,28 @@ class Shikamori {
 	}
 
 	createPaginationButtons(dataId, currentPage, totalPages) {
-		return new ActionRowBuilder()
-			.addComponents(
-				new ButtonBuilder()
-					.setCustomId(`${dataId}_first`)
-					.setLabel('⏪')
-					.setStyle(ButtonStyle.Primary)
-					.setDisabled(currentPage === 0),
-				new ButtonBuilder()
-					.setCustomId(`${dataId}_prev`)
-					.setLabel('◀️')
-					.setStyle(ButtonStyle.Primary)
-					.setDisabled(currentPage === 0),
-				new ButtonBuilder()
-					.setCustomId(`${dataId}_next`)
-					.setLabel('▶️')
-					.setStyle(ButtonStyle.Primary)
-					.setDisabled(currentPage >= totalPages - 1),
-				new ButtonBuilder()
-					.setCustomId(`${dataId}_last`)
-					.setLabel('⏩')
-					.setStyle(ButtonStyle.Primary)
-					.setDisabled(currentPage >= totalPages - 1)
-			);
+		return new ActionRowBuilder().addComponents(
+			new ButtonBuilder()
+				.setCustomId(`${dataId}_first`)
+				.setLabel('⏪')
+				.setStyle(ButtonStyle.Primary)
+				.setDisabled(currentPage === 0),
+			new ButtonBuilder()
+				.setCustomId(`${dataId}_prev`)
+				.setLabel('◀️')
+				.setStyle(ButtonStyle.Primary)
+				.setDisabled(currentPage === 0),
+			new ButtonBuilder()
+				.setCustomId(`${dataId}_next`)
+				.setLabel('▶️')
+				.setStyle(ButtonStyle.Primary)
+				.setDisabled(currentPage >= totalPages - 1),
+			new ButtonBuilder()
+				.setCustomId(`${dataId}_last`)
+				.setLabel('⏩')
+				.setStyle(ButtonStyle.Primary)
+				.setDisabled(currentPage >= totalPages - 1),
+		);
 	}
 
 	async handlePagination(interaction) {
@@ -428,7 +496,10 @@ class Shikamori {
 		const data = this.paginationData.get(dataId);
 
 		if (!data || data.userId !== interaction.user.id) {
-			return interaction.reply({ content: 'Invalid pagination data', ephemeral: true });
+			return interaction.reply({
+				content: 'Invalid pagination data',
+				ephemeral: true,
+			});
 		}
 
 		let newPage = data.currentPage;
@@ -453,11 +524,17 @@ class Shikamori {
 		}
 
 		data.currentPage = newPage;
-		const buttons = this.createPaginationButtons(dataId, newPage, data.pages.length);
+		const buttons = this.createPaginationButtons(
+			dataId,
+			newPage,
+			data.pages.length,
+		);
 
 		await interaction.update({
-			content: `${data.pages[newPage]}\n\n**Page ${newPage + 1} of ${data.pages.length}**`,
-			components: [buttons]
+			content: `${data.pages[newPage]}\n\n**Page ${newPage + 1} of ${
+				data.pages.length
+			}**`,
+			components: [buttons],
 		});
 	}
 
@@ -467,14 +544,14 @@ class Shikamori {
 }
 
 const shikamori = new Shikamori();
-if(process.env.token){
-	try{
-		shikamori.start(process.env.token)
-	}catch(e){
-		console.log(`${e}`)
+if (process.env.token) {
+	try {
+		shikamori.start(process.env.token);
+	} catch (e) {
+		console.log(`${e}`);
 	}
-}else{
-	console.log("token not found")
+} else {
+	console.log('token not found');
 }
 
 export default shikamori;

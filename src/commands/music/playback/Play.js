@@ -283,7 +283,7 @@ class PlayCommand extends Command {
         });
       }
 
-      const messageInstance = await interaction.reply({
+       await interaction.reply({
         components: [this._createLoadingContainer(query)],
         flags: MessageFlags.IsComponentsV2,
         fetchReply: true,
@@ -1327,7 +1327,8 @@ class PlayCommand extends Command {
     } catch {
       return false;
     }
-  }
+      }
+  
 
   _formatDuration(ms) {
     if (!ms || ms < 0) return "Live";

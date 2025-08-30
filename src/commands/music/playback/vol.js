@@ -10,6 +10,12 @@ import {
   SeparatorSpacingSize,
   TextDisplayBuilder,
   ThumbnailBuilder,
+  ComponentType,
+  StringSelectMenuBuilder,
+  UserSelectMenuBuilder,
+  RoleSelectMenuBuilder,
+  ChannelSelectMenuBuilder,
+  MentionableSelectMenuBuilder,
 } from "discord.js";
 import { PlayerManager } from "#managers/PlayerManager";
 import { config } from "#config/config";
@@ -81,7 +87,7 @@ class VolumeCommand extends Command {
     const barLength = 15;
     const filledBlocks = Math.round((volume / 150) * barLength);
     const emptyBlocks = barLength - filledBlocks;
-    const volumeBar = "█".repeat(filledBlocks) + "░".repeat(emptyBlocks);
+    const volumeBar = "█".repeat(filledBlocks) + "▒".repeat(emptyBlocks);
     const artworkUrl =
       pm.currentTrack?.info?.artworkUrl || config.assets.defaultTrackArtwork;
 
@@ -180,40 +186,149 @@ class VolumeCommand extends Command {
       await interaction.editReply({ components: [newContainer] });
     });
 
-    collector.on("end", async () => {
+    collector.on("end", async (collected, reason) => {
+      if (reason === "limit" || reason === "messageDelete") return;
+
       try {
-        const currentMessage = await message.fetch().catch(() => null);
-        if (!currentMessage || currentMessage.components.length === 0) return;
+        const currentMessage = await this._fetchMessage(message).catch(
+          () => null,
+        );
 
-        const originalContainer = currentMessage.components[0];
-        if (!originalContainer) return;
-
-        const newContainer = new ContainerBuilder();
-        for (const component of originalContainer.components) {
-          if (component.type === 1) {
-            continue;
-          } else if (component.type === 2) {
-            newContainer.addTextDisplayComponents(component);
-          } else if (component.type === 3) {
-            newContainer.addSeparatorComponents(component);
-          } else if (component.type === 4) {
-            newContainer.addSectionComponents(component);
-          }
+        if (!currentMessage?.components?.length) {
+          return;
         }
 
-        await currentMessage.edit({
-          components: [newContainer],
-          flags: MessageFlags.IsComponentsV2,
-        });
-      } catch (e) {
-        if (e.code !== 10008)
-          logger.error(
+        const success = await this._disableAllComponents(currentMessage);
+
+        if (success) {
+          logger.debug(
             "VolumeCommand",
-            "Failed to disable volume components:",
-            e,
+            `Components disabled successfully. Reason: ${reason}`,
           );
+        }
+      } catch (error) {
+        this._handleDisableError(error, reason);
       }
     });
+
+    collector.on("dispose", async (interaction) => {
+      logger.debug(
+        "VolumeCommand",
+        `Interaction disposed: ${interaction.customId}`,
+      );
+    });
+  }
+
+  async _disableAllComponents(message) {
+    try {
+      const disabledComponents = this._processComponents(message.components);
+
+      await message.edit({
+        components: disabledComponents,
+        flags: MessageFlags.IsComponentsV2,
+      });
+
+      return true;
+    } catch (error) {
+      logger.error(
+        "VolumeCommand",
+        `Failed to disable components: ${error.message}`,
+        error,
+      );
+      return false;
+    }
+  }
+
+  _processComponents(components) {
+    return components.map((component) => {
+      if (component.type === ComponentType.ActionRow) {
+        return {
+          ...component.toJSON(),
+          components: component.components.map((subComponent) => ({
+            ...subComponent.toJSON(),
+            disabled: true,
+          })),
+        };
+      }
+
+      if (component.type === ComponentType.Container) {
+        return {
+          ...component.toJSON(),
+          components: this._processComponents(component.components),
+        };
+      }
+
+      if (component.type === ComponentType.Section) {
+        const processedComponent = {
+          ...component.toJSON(),
+          components: this._processComponents(component.components),
+        };
+
+        if (
+          component.accessory &&
+          component.accessory.type === ComponentType.Button
+        ) {
+          processedComponent.accessory = {
+            ...component.accessory.toJSON(),
+            disabled: true,
+          };
+        }
+
+        return processedComponent;
+      }
+
+      return component.toJSON();
+    });
+  }
+
+  _handleDisableError(error, reason) {
+    if (error.code === 10008) {
+      logger.debug(
+        "VolumeCommand",
+        `Message was deleted, cannot disable components. Reason: ${reason}`,
+      );
+    } else if (error.code === 50001) {
+      logger.warn(
+        "VolumeCommand",
+        `Missing permissions to edit message. Reason: ${reason}`,
+      );
+    } else {
+      logger.error(
+        "VolumeCommand",
+        `Error disabling components: ${error.message}. Reason: ${reason}`,
+        error,
+      );
+    }
+  }
+
+  async _fetchMessage(messageOrInteraction) {
+    if (messageOrInteraction.fetchReply) {
+      return await messageOrInteraction.fetchReply();
+    } else if (messageOrInteraction.fetch) {
+      return await messageOrInteraction.fetch();
+    } else {
+      return messageOrInteraction;
+    }
+  }
+
+  _shouldDisableComponent(component) {
+    const selectMenuTypes = [
+      StringSelectMenuBuilder,
+      UserSelectMenuBuilder,
+      RoleSelectMenuBuilder,
+      ChannelSelectMenuBuilder,
+      MentionableSelectMenuBuilder,
+    ];
+
+    if (selectMenuTypes.some((type) => component instanceof type)) {
+      return true;
+    }
+
+    if (component instanceof ButtonBuilder) {
+      return component.data.style !== ButtonStyle.Link;
+    }
+
+    return false;
   }
 
   _createErrorContainer(message) {

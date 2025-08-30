@@ -2,7 +2,7 @@ import { Database } from '#structures/classes/Database';
 import { config } from "#config/config";
 import { logger } from "#utils/logger";
 
-const HISTORY_LIMIT   =25;
+const HISTORY_LIMIT   =10;
 const USER_PREFIX_LIMIT   =3;
 
 export class User extends Database {

@@ -290,7 +290,7 @@ class SearchCommand extends Command {
 
     const collector   =message.createMessageComponentCollector({
       filter,
-      time: 300000,
+      time: 10000,
       max: 10
     });
 
@@ -298,12 +298,12 @@ class SearchCommand extends Command {
       try {
         logger.debug('SearchCommand', `Collector triggered: ${interaction.customId} by ${interaction.user.id}`);
 
-        await interaction.deferUpdate();
+        await interaction.deferReply();
 
         if (interaction.customId   ==='search_source_select') {
-          await this._handleSourceSelect(interaction, client, searchData);
+          await this._handleSourceSelect(interaction, client, searchData,message);
         } else if (interaction.customId   ===`search_result_select_${guildId}`) {
-          await this._handleResultSelect(interaction, client, guildId, searchData);
+          await this._handleResultSelect(interaction, client, guildId, searchData,message);
         }
 
       } catch (error) {
@@ -317,8 +317,7 @@ class SearchCommand extends Command {
           logger.error('SearchCommand', 'Error sending followUp', followUpError);
         }
       }
-    });
-
+    })
     collector.on('end', async (collected, reason)   => {
       logger.debug('SearchCommand', `Collector ended: ${reason}, collected: ${collected.size}`);
 
@@ -381,7 +380,7 @@ class SearchCommand extends Command {
     }
   }
 
-  async _handleResultSelect(interaction, client, guildId, searchData) {
+  async _handleResultSelect(interaction, client, guildId, searchData,message) {
     const selectedIndices   =interaction.values.map(v   => parseInt(v, 10));
     const { currentResults }   =searchData;
 
@@ -417,7 +416,7 @@ class SearchCommand extends Command {
       components: [this._createProcessingContainer(selectedIndices.length)],
       flags: MessageFlags.IsComponentsV2
     });
-
+ await message.delete()
     await this._addTracksToQueue(interaction, client, guildId, currentResults, selectedIndices);
   }
 

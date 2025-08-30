@@ -98,9 +98,7 @@ export class PlayerManager {
     const { current } = player.queue;
     const duration = current?.info?.duration ?? 0;
 
-    if (this.queueSize > 0) {
-      await player.skip(amount);
-    } else if (player.repeatMode === "track" && duration > 0) {
+    if (player.repeatMode === "track" && duration > 0) {
       await player.seek(duration);
     } else if (
       player.repeatMode === "queue" &&
@@ -108,6 +106,8 @@ export class PlayerManager {
       duration > 0
     ) {
       await player.seek(duration);
+    } else if (this.queueSize > 0) {
+      await player.skip(amount);
     } else {
       await this.stop();
     }
@@ -213,7 +213,7 @@ export class PlayerManager {
   }
 
   async clearQueue() {
-    return await this.queue.clear();
+   return await this.player.queue.tracks.splice(0, this.player.queue.tracks.length);
   }
 
   async forward(amount = 10000) {

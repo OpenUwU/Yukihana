@@ -2,6 +2,8 @@ import {
   ContainerBuilder,
   MessageFlags,
   SectionBuilder,
+  SeparatorBuilder,
+  SeparatorSpacingSize,
   TextDisplayBuilder,
   ThumbnailBuilder,
 } from 'discord.js';
@@ -9,6 +11,7 @@ import {
 import { config } from '#config/config';
 import { Command } from '#structures/classes/Command';
 import { logger } from '#utils/logger';
+import emoji from '#config/emoji';
 
 class GrabCommand extends Command {
   constructor() {
@@ -44,100 +47,169 @@ class GrabCommand extends Command {
   }
 
   async _handleGrab(context, user, pm) {
-    const song   =await pm.grab();
+    const song = await pm.grab();
 
     if (!song) {
       return this._reply(context, this._createErrorContainer('There is no song to grab.'));
     }
 
-    const dmContainer   =new ContainerBuilder();
-    dmContainer.addTextDisplayComponents(
-      new TextDisplayBuilder().setContent('### 🎵 Grabbed Song'),
-    );
-
-    dmContainer.addSectionComponents(
-      new SectionBuilder()
-        .addTextDisplayComponents(
-          new TextDisplayBuilder().setContent(`**[${song.info.title}](${song.info.uri})**\n*by ${song.info.author || 'Unknown'}* \n⏱️ **Duration:** ${song.info.isStream ? 'LIVE' : this._formatDuration(song.info.duration)}\n👤 **Requested by:** ${this._getRequesterMention(song.requester)}`),
-        )
-        .setThumbnailAccessory(
-          new ThumbnailBuilder().setURL(song.info.artworkUrl || config.assets.defaultTrackArtwork),
-        ),
-    );
+    const dmContainer = this._createDMContainer(song);
 
     try {
       if (!user.dmChannel) {
         await user.createDM();
       }
 
-      const dmPayload   ={
+      const dmPayload = {
         components: [dmContainer],
         flags: MessageFlags.IsComponentsV2,
       };
 
       await user.send(dmPayload);
 
-      const successContainer   =new ContainerBuilder();
-      successContainer.addTextDisplayComponents(
-        new TextDisplayBuilder().setContent('### ✅ Song Grabbed'),
-      );
-
-      successContainer.addSectionComponents(
-        new SectionBuilder()
-          .addTextDisplayComponents(
-            new TextDisplayBuilder().setContent('The current song has been sent to your DMs!'),
-          )
-          .setThumbnailAccessory(
-            new ThumbnailBuilder().setURL(song.info.artworkUrl || config.assets.defaultTrackArtwork),
-          ),
-      );
-
+      const successContainer = this._createSuccessContainer(song);
       return this._reply(context, successContainer);
     } catch (error) {
       logger.error('GrabCommand', 'DM Error:', error);
 
-      let errorMessage   ='Unable to send DM.';
+      let errorMessage = 'Unable to send DM.';
 
-      if (error.code   ===50007) {
-        errorMessage   ='Unable to send DM. You have DMs disabled or have blocked the bot.';
-      } else if (error.code   ===50001) {
-        errorMessage   ='Unable to send DM. Missing access permissions.';
-      } else if (error.code   ===10013) {
-        errorMessage   ='Unable to send DM. User not found.';
+      if (error.code === 50007) {
+        errorMessage = 'Unable to send DM. You have DMs disabled or have blocked the bot.';
+      } else if (error.code === 50001) {
+        errorMessage = 'Unable to send DM. Missing access permissions.';
+      } else if (error.code === 10013) {
+        errorMessage = 'Unable to send DM. User not found.';
       } else if (error.message?.includes('Cannot send messages to this user')) {
-        errorMessage   ='Unable to send DM. Please check your privacy settings or ensure you share a server with the bot.';
+        errorMessage = 'Unable to send DM. Please check your privacy settings or ensure you share a server with the bot.';
       } else {
-        errorMessage   =`Unable to send DM: ${error.message || 'Unknown error'}`;
+        errorMessage = `Unable to send DM: ${error.message || 'Unknown error'}`;
       }
 
       return this._reply(context, this._createErrorContainer(errorMessage));
     }
   }
 
+  _createDMContainer(song) {
+    const container = new ContainerBuilder();
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get('music')} **Grabbed Song**`)
+    );
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    const content = `**You saved this track for later**\n\n` +
+      `**${emoji.get('folder')} Track Details**\n` +
+      `├─ **[${song.info.title}](${song.info.uri})**\n` +
+      `├─ Artist: ${song.info.author || 'Unknown'}\n` +
+      `├─ Duration: ${song.info.isStream ? 'LIVE' : this._formatDuration(song.info.duration)}\n` +
+      `└─ Requested by: ${this._getRequesterMention(song.requester)}\n\n` +
+      `**${emoji.get('info')} Quick Actions**\n` +
+      `├─ Copy the link above to share with friends\n` +
+      `├─ Use the title to search on other platforms\n` +
+      `├─ Save to your personal music library\n` +
+      `└─ Add to playlists for future listening`;
+
+    const section = new SectionBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+      .setThumbnailAccessory(
+        new ThumbnailBuilder().setURL(song.info.artworkUrl || config.assets.defaultTrackArtwork)
+      );
+
+    container.addSectionComponents(section);
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    return container;
+  }
+
+  _createSuccessContainer(song) {
+    const container = new ContainerBuilder();
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get('check')} **Song Grabbed**`)
+    );
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    const content = `**Track successfully saved to your DMs**\n\n` +
+      `**${emoji.get('music')} Grabbed Track**\n` +
+      `├─ **[${song.info.title}](${song.info.uri})**\n` +
+      `├─ Artist: ${song.info.author || 'Unknown'}\n` +
+      `├─ Duration: ${song.info.isStream ? 'LIVE' : this._formatDuration(song.info.duration)}\n` +
+      `└─ Saved to your private messages\n\n` +
+      `**${emoji.get('folder')} What's Next?**\n` +
+      `├─ Check your DMs for the full track details\n` +
+      `├─ Track link and information preserved\n` +
+      `├─ Easy access for future reference\n` +
+      `└─ Share or save to your music collection`;
+
+    const section = new SectionBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
+      .setThumbnailAccessory(
+        new ThumbnailBuilder().setURL(song.info.artworkUrl || config.assets.defaultTrackArtwork)
+      );
+
+    container.addSectionComponents(section);
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    return container;
+  }
+
+  _createErrorContainer(message) {
+    const container = new ContainerBuilder();
+
+    container.addTextDisplayComponents(
+      new TextDisplayBuilder().setContent(`${emoji.get('cross')} **Error**`)
+    );
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    const section = new SectionBuilder()
+      .addTextDisplayComponents(new TextDisplayBuilder().setContent(message))
+      .setThumbnailAccessory(
+        new ThumbnailBuilder().setURL(config.assets.defaultThumbnail || config.assets.defaultTrackArtwork)
+      );
+
+    container.addSectionComponents(section);
+
+    container.addSeparatorComponents(
+      new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small)
+    );
+
+    return container;
+  }
+
   _formatDuration(duration) {
     if (!duration || duration < 0) return 'Live';
-    const hours   =Math.floor(duration / 3600000);
-    const minutes   =Math.floor((duration % 3600000) / 60000);
-    const seconds   =Math.floor((duration % 60000) / 1000);
+    const hours = Math.floor(duration / 3600000);
+    const minutes = Math.floor((duration % 3600000) / 60000);
+    const seconds = Math.floor((duration % 60000) / 1000);
 
-    return `${hours > 0 ? `${ hours.toString().padStart(2, '0')}:` : '' }${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    return `${hours > 0 ? `${hours.toString().padStart(2, '0')}:` : ''}${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   }
 
   _getRequesterMention(requester) {
-    if (typeof requester   ==='object' && requester   !==null && 'id' in requester) {
+    if (typeof requester === 'object' && requester !== null && 'id' in requester) {
       return `<@${requester.id}>`;
     }
     return 'Unknown';
   }
 
-  _createErrorContainer(message) {
-    return new ContainerBuilder().addTextDisplayComponents(
-      new TextDisplayBuilder().setContent(`**Error**\n*${message}*`),
-    );
-  }
-
   async _reply(context, container) {
-    const payload   ={
+    const payload = {
       components: [container],
       flags: MessageFlags.IsComponentsV2,
     };

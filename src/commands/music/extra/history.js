@@ -17,7 +17,7 @@ import { db } from "#database/DatabaseManager";
 import { config } from "#config/config";
 import { logger } from "#utils/logger";
 
-const TRACKS_PER_PAGE   =10;
+const TRACKS_PER_PAGE   = 5;
 
 class HistoryCommand extends Command {
   constructor() {

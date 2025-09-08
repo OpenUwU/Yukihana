@@ -21,7 +21,6 @@
     "#handlers/*": "./src/structures/handlers/*.js",
     "#classes/*": "./src/structures/classes/*.js",
     "#db/*": "./src/database/repo/*.js"
-    
   },
   "keywords": [
     "discord",
@@ -40,7 +39,9 @@
     "chalk": "^5.4.1",
     "discord-hybrid-sharding": "^2.2.6",
     "discord.js": "^14.22.0",
+    "discord.js-docs": "^0.4.3",
     "dotenv": "^16.6.1",
+    "express": "^5.1.0",
     "fs-extra": "^11.3.0",
     "lavalink-client": "^2.5.7",
     "moment": "^2.30.1",

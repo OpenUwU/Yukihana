@@ -500,7 +500,7 @@ class HelpCommand extends Command {
 
       let content = `**${this._capitalize(category)} Category**\n\n`;
 
-  
+      
       const directCommands = commands.filter((cmd) => {
         if (!subcats) return true;
         for (const [, subcatCommands] of subcats) {
@@ -511,35 +511,31 @@ class HelpCommand extends Command {
         return true;
       });
 
-    
       const hasDirectCommands = directCommands.length > 0;
       const hasSubcats = subcats && subcats.size > 0;
       const subcatEntries = hasSubcats ? Array.from(subcats.entries()) : [];
 
-      
+    
       if (hasDirectCommands) {
         directCommands.forEach((cmd, index) => {
-          const isLastDirect = index === directCommands.length - 1;
-          const isLastOverall = isLastDirect && !hasSubcats;
-          const prefix = isLastOverall ? "└─" : "├─";
-          content += `${prefix} \`${cmd.name}\` - ${cmd.description?.slice(0, 50) || "No description"}${cmd.description?.length > 50 ? "..." : ""}\n`;
+          const isLast = index === directCommands.length - 1 && !hasSubcats;
+          const prefix = isLast ? "└── " : "├── ";
+          content += `${prefix}${emoji.get("info")}\`${cmd.name}\`\n`;
         });
       }
 
-      
+    
       if (hasSubcats) {
         subcatEntries.forEach(([subcatName, subcatCommands], subcatIndex) => {
           const isLastSubcat = subcatIndex === subcatEntries.length - 1;
-          const subcatPrefix = isLastSubcat ? "└─" : "├─";
-          const cmdPrefix = isLastSubcat ? "   " : "│  ";
+          const prefix = isLastSubcat ? "└── " : "├── ";
 
-          content += `${subcatPrefix} ${emoji.get("openfolder")} **${this._capitalize(subcatName)}**\n`;
+          content += `${prefix}${emoji.get("folder")}**${this._capitalize(subcatName)}**\n`;
 
-          subcatCommands.forEach((cmd, cmdIndex) => {
-            const isLastCmd = cmdIndex === subcatCommands.length - 1;
-            const cmdSymbol = isLastCmd ? "└─" : "├─";
-            content += `${cmdPrefix}${cmdSymbol} \`${cmd.name}\` - ${cmd.description?.slice(0, 40) || "No description"}${cmd.description?.length > 40 ? "..." : ""}\n`;
-          });
+          
+          const commandList = subcatCommands.map(cmd => `\`${cmd.name}\``).join(", ");
+          const indent = isLastSubcat ? "    " : "│   ";
+          content += `${indent}${commandList}\n`;
         });
       }
 

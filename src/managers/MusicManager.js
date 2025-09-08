@@ -66,11 +66,19 @@ export class MusicManager {
 				linksWhitelist: [],
 			});
 
+<<<<<<< HEAD
 			this.client.on('ready', async () => {
 				logger.success(
 					'MusicManager',
 					`🎵 ${this.client.user.tag} music system is ready!`,
 				);
+=======
+      this.client.on("clientReady", async () => {
+        logger.success(
+          "MusicManager",
+          `🎵 ${this.client.user.tag} music system is ready!`,
+        );
+>>>>>>> a1677a6 (fix)
 
 				this.lavalink.init(this.client.user);
 				this.initialized = true;

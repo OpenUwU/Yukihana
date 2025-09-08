@@ -22,3 +22,7 @@ args = "cd src && node index.js"
 
 [nix]
 packages = ["unzipNLS"]
+
+[[ports]]
+localPort = 3000
+externalPort = 3000

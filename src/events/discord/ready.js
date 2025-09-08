@@ -7,7 +7,7 @@ import path from "path";
 import { AttachmentBuilder } from "discord.js";
 
 export default {
-  name: "ready",
+  name: "clientReady",
   once: true,
   async execute(client) {
     logger.info("Bot", "Scheduling database backups every 30 minutes");

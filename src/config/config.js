@@ -73,9 +73,9 @@ export const config = {
     }
   },
   assets: {
-    defaultTrackArtwork: 'https://github.com/bre4d777/Yukihana/blob/main/images.jpeg?raw=true',
-    defaultThumbnail: 'https://github.com/bre4d777/Yukihana/blob/main/images.jpeg?raw=true',
-    helpThumbnail: 'https://github.com/bre4d777/Yukihana/blob/main/images.jpeg?raw=true'
+    defaultTrackArtwork: 'https://raw.githubusercontent.com/bre4d777/Miku/refs/heads/main/images%20(1).jpeg',
+    defaultThumbnail: 'https://raw.githubusercontent.com/bre4d777/Miku/refs/heads/main/images%20(1).jpeg',
+    helpThumbnail: 'https://raw.githubusercontent.com/bre4d777/Miku/refs/heads/main/images%20(1).jpeg'
   },
   spotify: {
     clientId: process.env.SPOTIFY_CLIENT_ID || "321c535c35b4423a945c9a6df5c5be06",

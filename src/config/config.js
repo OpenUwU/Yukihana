@@ -24,6 +24,7 @@ export const config = {
     user: './database/data/user.bread',
     premium: './database/data/premium.bread',
     antiabuse: './database/data/antiabuse.bread',
+    playlists: './database/data/playlists.bread',
   },
   links: {
     supportServer: "https://google.com"

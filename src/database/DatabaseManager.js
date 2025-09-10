@@ -1,5 +1,6 @@
 import { Guild } from "#db/Guild";
 import { User } from "#db/User";
+import { Playlists } from "#db/Playlists"
 import { Premium } from "#db/Premium";
 import { logger } from "#utils/logger";
 
@@ -13,7 +14,7 @@ export class DatabaseManager {
       this.guild = new Guild();
       this.user = new User();
       this.premium = new Premium();
-
+      this.playlists = new Playlists();
       logger.success(
         "DatabaseManager",
         "All databases initialized successfully",
@@ -29,7 +30,7 @@ export class DatabaseManager {
       this.guild.close();
       this.user.close();
       this.premium.close();
-
+      this.playlists.close();
       logger.info("DatabaseManager", "All database connections closed");
     } catch (error) {
       logger.error(

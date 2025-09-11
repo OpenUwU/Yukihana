@@ -51,7 +51,7 @@ class DeletePlaylistCommand extends Command {
 			});
 		}
 
-		const playlistQuery = args.join(' ');
+		const playlistQuery = args.join(" ");
 		return this._handleDelete(message.author, playlistQuery, message);
 	}
 
@@ -78,11 +78,11 @@ class DeletePlaylistCommand extends Command {
 
 			let targetPlaylist = null;
 
-			if (playlistQuery.startsWith('pl_')) {
-				targetPlaylist = userPlaylists.find(pl => pl.id === playlistQuery);
+			if (playlistQuery.startsWith("pl_")) {
+				targetPlaylist = userPlaylists.find((pl) => pl.id === playlistQuery);
 			} else {
-				targetPlaylist = userPlaylists.find(pl => 
-					pl.name.toLowerCase() === playlistQuery.toLowerCase()
+				targetPlaylist = userPlaylists.find(
+					(pl) => pl.name.toLowerCase() === playlistQuery.toLowerCase(),
 				);
 			}
 
@@ -101,16 +101,16 @@ class DeletePlaylistCommand extends Command {
 					this._createSuccessContainer(targetPlaylist),
 				);
 			} else {
-				throw new Error('Failed to delete playlist');
+				throw new Error("Failed to delete playlist");
 			}
-
 		} catch (error) {
 			logger.error("DeletePlaylistCommand", "Error deleting playlist", error);
 
-			let errorMessage = "An error occurred while deleting the playlist. Please try again.";
-			if (error.message === 'Playlist not found') {
+			let errorMessage =
+				"An error occurred while deleting the playlist. Please try again.";
+			if (error.message === "Playlist not found") {
 				errorMessage = "The specified playlist could not be found.";
-			} else if (error.message === 'Access denied') {
+			} else if (error.message === "Access denied") {
 				errorMessage = "You don't have permission to delete this playlist.";
 			}
 
@@ -219,7 +219,7 @@ class DeletePlaylistCommand extends Command {
 		);
 
 		const deletedDate = new Date().toLocaleDateString();
-		const playlistId = playlist.id.replace('pl_', '').substring(0, 8);
+		const playlistId = playlist.id.replace("pl_", "").substring(0, 8);
 
 		const content =
 			`**Playlist has been permanently removed**\n\n` +
@@ -313,11 +313,13 @@ class DeletePlaylistCommand extends Command {
 
 		const playlistList = userPlaylists
 			.slice(0, 5)
-			.map(pl => `├─ ${pl.name} (${pl.track_count || 0} tracks)`)
-			.join('\n');
+			.map((pl) => `├─ ${pl.name} (${pl.track_count || 0} tracks)`)
+			.join("\n");
 
-		const moreText = userPlaylists.length > 5 ? 
-			`└─ ...and ${userPlaylists.length - 5} more\n\n` : '└─ \n\n';
+		const moreText =
+			userPlaylists.length > 5
+				? `└─ ...and ${userPlaylists.length - 5} more\n\n`
+				: "└─ \n\n";
 
 		const content =
 			`**Could not find the specified playlist**\n\n` +

@@ -63,7 +63,7 @@ class LoadPlaylistCommand extends Command {
 		let positionsStr = null;
 		let query = args.join(" ");
 
-		// Smartly detect if the last argument is a position string
+	
 		const lastArg = args[args.length - 1];
 		if (args.length > 1 && /^[0-9,-]+$/.test(lastArg)) {
 			positionsStr = args.pop();
@@ -133,7 +133,7 @@ class LoadPlaylistCommand extends Command {
 				selectionInfo = `up to ${MAX_TRACKS_TO_ADD} tracks`;
 			}
 
-			// --- Voice Channel and Permissions Checks ---
+	
 			const voiceChannel = context.member?.voice?.channel;
 			if (!voiceChannel)
 				return this._editReply(
@@ -208,7 +208,7 @@ class LoadPlaylistCommand extends Command {
 				} else {
 					failedCount++;
 				}
-				// Optional: Progress update can be added here if needed for very large selections
+			
 			}
 
 			if (wasEmpty && addedCount > 0) await pm.play();
@@ -359,15 +359,15 @@ class LoadPlaylistCommand extends Command {
 			`${limitWarning ? `**${emoji.get("info")} Notice:** ${limitWarning}` : ""}`;
 		container.addSectionComponents(
 			new SectionBuilder()
-			.setThumbnailAccessory(new ThumbnailBuilder().setURL(config.assets.defaultThumbnail))
-			.addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(content),
-			),
+				.setThumbnailAccessory(
+					new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
+				)
+				.addTextDisplayComponents(new TextDisplayBuilder().setContent(content)),
 		);
 		return container;
 	}
 
-	// Unchanged helper methods from previous versions
+	
 	_createLoadingContainer(query) {
 		return new ContainerBuilder().addTextDisplayComponents(
 			new TextDisplayBuilder().setContent(

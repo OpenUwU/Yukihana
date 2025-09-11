@@ -155,7 +155,11 @@ class MyPlaylistsCommand extends Command {
 
 		collector.on("end", async () => {
 			try {
-				if (message) await message.edit({ components: [] });
+				if (message)
+					await message.edit({
+						components: [this._createExpiredContainer],
+						flags: MessageFlags.IsComponentsV2,
+					});
 			} catch (error) {
 				if (error.code !== 10008)
 					logger.error(
@@ -167,6 +171,13 @@ class MyPlaylistsCommand extends Command {
 		});
 	}
 
+	_createExpiredContainer() {
+		return new ContainerBuilder().addTextDisplayComponents(
+			new TextDisplayBuilder().setContent(
+				`${emoji.get("info")} **Interaction Expired**`,
+			),
+		);
+	}
 	_createNoPlaylistsContainer() {
 		return new ContainerBuilder()
 			.addTextDisplayComponents(

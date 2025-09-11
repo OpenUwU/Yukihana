@@ -58,7 +58,7 @@ class CreatePlaylistCommand extends Command {
 		}
 
 		const name = args[0];
-		const description = args.slice(1).join(' ') || null;
+		const description = args.slice(1).join(" ") || null;
 
 		return this._handleCreate(message.author, name, description, message);
 	}
@@ -86,15 +86,18 @@ class CreatePlaylistCommand extends Command {
 		} catch (error) {
 			logger.error("CreatePlaylistCommand", "Error creating playlist", error);
 
-			let errorMessage = "An error occurred while creating your playlist. Please try again.";
-			if (error.message === 'Invalid playlist name') {
-				errorMessage = "Please provide a valid playlist name (1-100 characters).";
-			} else if (error.message === 'Description too long') {
+			let errorMessage =
+				"An error occurred while creating your playlist. Please try again.";
+			if (error.message === "Invalid playlist name") {
+				errorMessage =
+					"Please provide a valid playlist name (1-100 characters).";
+			} else if (error.message === "Description too long") {
 				errorMessage = "Playlist description is too long (max 500 characters).";
-			} else if (error.message === 'Maximum playlist limit reached') {
+			} else if (error.message === "Maximum playlist limit reached") {
 				errorMessage = "You've reached the maximum limit of 25 playlists.";
-			} else if (error.message === 'Playlist with this name already exists') {
-				errorMessage = "You already have a playlist with this name. Choose a different name.";
+			} else if (error.message === "Playlist with this name already exists") {
+				errorMessage =
+					"You already have a playlist with this name. Choose a different name.";
 			}
 
 			return this._editReply(
@@ -202,7 +205,7 @@ class CreatePlaylistCommand extends Command {
 		);
 
 		const createdDate = new Date(playlist.created_at).toLocaleDateString();
-		const playlistId = playlist.id.replace('pl_', '').substring(0, 8);
+		const playlistId = playlist.id.replace("pl_", "").substring(0, 8);
 
 		let descriptionText = "";
 		if (playlist.description) {

@@ -26,7 +26,7 @@ class LyricsCommand extends Command {
 			aliases: ["ly", "lyric"],
 			category: "music",
 			examples: ["lyrics"],
-			cooldown: 5,
+			cooldown: 30,
 			voiceRequired: false,
 			sameVoiceRequired: false,
 			enabledSlash: true,

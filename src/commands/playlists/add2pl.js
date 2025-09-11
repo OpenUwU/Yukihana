@@ -25,11 +25,7 @@ class Add2PlaylistCommand extends Command {
 			usage: "add2pl [playlist_name/id]",
 			aliases: ["add-to-playlist", "a2pl"],
 			category: "music",
-			examples: [
-				"add2pl",
-				"add2pl My Favorites",
-				"add2pl pl_abc123",
-			],
+			examples: ["add2pl", "add2pl My Favorites", "add2pl pl_abc123"],
 			cooldown: 3,
 			voiceRequired: true,
 			sameVoiceRequired: true,
@@ -50,12 +46,13 @@ class Add2PlaylistCommand extends Command {
 	}
 
 	async execute({ client, message, args }) {
-		const playlistIdentifier = args.join(' ') || null;
+		const playlistIdentifier = args.join(" ") || null;
 		return this._handleAdd2Playlist(client, message, playlistIdentifier);
 	}
 
 	async slashExecute({ client, interaction }) {
-		const playlistIdentifier = interaction.options.getString("playlist") || null;
+		const playlistIdentifier =
+			interaction.options.getString("playlist") || null;
 		return this._handleAdd2Playlist(client, interaction, playlistIdentifier);
 	}
 
@@ -83,7 +80,9 @@ class Add2PlaylistCommand extends Command {
 		if (!playlist) {
 			return this._reply(
 				context,
-				this._createErrorContainer("Playlist not found. Check the name or ID and try again."),
+				this._createErrorContainer(
+					"Playlist not found. Check the name or ID and try again.",
+				),
 			);
 		}
 
@@ -100,10 +99,7 @@ class Add2PlaylistCommand extends Command {
 	async _showPlaylistSelection(context, userId, player) {
 		const playlists = db.playlists.getUserPlaylists(userId);
 		if (playlists.length === 0) {
-			return this._reply(
-				context,
-				this._createNoPlaylistsContainer(),
-			);
+			return this._reply(context, this._createNoPlaylistsContainer());
 		}
 
 		const message = await this._reply(
@@ -112,17 +108,24 @@ class Add2PlaylistCommand extends Command {
 		);
 
 		if (message) {
-			this._setupSelectionCollector(message, context, userId, player, playlists);
+			this._setupSelectionCollector(
+				message,
+				context,
+				userId,
+				player,
+				playlists,
+			);
 		}
 	}
 
 	_findPlaylist(userId, identifier) {
 		const playlists = db.playlists.getUserPlaylists(userId);
 
-		return playlists.find(pl => 
-			pl.id === identifier || 
-			pl.name.toLowerCase() === identifier.toLowerCase() ||
-			pl.id.replace('pl_', '').substring(0, 8) === identifier.toLowerCase()
+		return playlists.find(
+			(pl) =>
+				pl.id === identifier ||
+				pl.name.toLowerCase() === identifier.toLowerCase() ||
+				pl.id.replace("pl_", "").substring(0, 8) === identifier.toLowerCase(),
 		);
 	}
 
@@ -188,7 +191,8 @@ class Add2PlaylistCommand extends Command {
 			`└─ Entire queue\n\n` +
 			`*Select a playlist from the dropdown menu*`;
 
-		const thumbnailUrl = current.info.artworkUrl || config.assets?.defaultTrackArtwork;
+		const thumbnailUrl =
+			current.info.artworkUrl || config.assets?.defaultTrackArtwork;
 
 		const section = new SectionBuilder()
 			.addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
@@ -206,12 +210,15 @@ class Add2PlaylistCommand extends Command {
 			.setMaxValues(1);
 
 		playlists.forEach((playlist) => {
-			const playlistId = playlist.id.replace('pl_', '').substring(0, 8);
+			const playlistId = playlist.id.replace("pl_", "").substring(0, 8);
 			const trackCount = playlist.track_count || 0;
 			const availableSlots = Math.max(0, 50 - trackCount);
 
 			selectMenu.addOptions({
-				label: playlist.name.length > 100 ? playlist.name.slice(0, 97) + "..." : playlist.name,
+				label:
+					playlist.name.length > 100
+						? playlist.name.slice(0, 97) + "..."
+						: playlist.name,
 				description: `${trackCount}/50 tracks • ${availableSlots} slots available`,
 				value: playlist.id,
 			});
@@ -248,7 +255,8 @@ class Add2PlaylistCommand extends Command {
 			`Choose what to add to this playlist:\n\n` +
 			`*Use the buttons below to make your selection*`;
 
-		const thumbnailUrl = current.info.artworkUrl || config.assets?.defaultTrackArtwork;
+		const thumbnailUrl =
+			current.info.artworkUrl || config.assets?.defaultTrackArtwork;
 
 		const section = new SectionBuilder()
 			.addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
@@ -269,7 +277,9 @@ class Add2PlaylistCommand extends Command {
 				.setDisabled(availableSlots < 1),
 			new ButtonBuilder()
 				.setCustomId("add_queue")
-				.setLabel(`Add Queue (${Math.min(queueCount + 1, availableSlots)} tracks)`)
+				.setLabel(
+					`Add Queue (${Math.min(queueCount + 1, availableSlots)} tracks)`,
+				)
 				.setStyle(ButtonStyle.Success)
 				.setEmoji(emoji.get("add"))
 				.setDisabled(availableSlots < 1),
@@ -306,7 +316,8 @@ class Add2PlaylistCommand extends Command {
 			`Select what you want to add to this playlist:\n\n` +
 			`*Use the buttons below to make your selection*`;
 
-		const thumbnailUrl = current.info.artworkUrl || config.assets?.defaultTrackArtwork;
+		const thumbnailUrl =
+			current.info.artworkUrl || config.assets?.defaultTrackArtwork;
 
 		const section = new SectionBuilder()
 			.addTextDisplayComponents(new TextDisplayBuilder().setContent(content))
@@ -327,7 +338,9 @@ class Add2PlaylistCommand extends Command {
 				.setDisabled(availableSlots < 1),
 			new ButtonBuilder()
 				.setCustomId("add_queue")
-				.setLabel(`Add Queue (${Math.min(queueCount + 1, availableSlots)} tracks)`)
+				.setLabel(
+					`Add Queue (${Math.min(queueCount + 1, availableSlots)} tracks)`,
+				)
 				.setStyle(ButtonStyle.Success)
 				.setEmoji(emoji.get("add"))
 				.setDisabled(availableSlots < 1),
@@ -352,19 +365,19 @@ class Add2PlaylistCommand extends Command {
 		);
 
 		const actionText = action === "current" ? "current track" : "queue tracks";
-		let statusText = `Added ${addedCount} track${addedCount > 1 ? 's' : ''} to playlist`;
+		let statusText = `Added ${addedCount} track${addedCount > 1 ? "s" : ""} to playlist`;
 
 		if (skippedCount > 0) {
-			statusText += `. ${skippedCount} track${skippedCount > 1 ? 's' : ''} skipped (already in playlist or playlist full)`;
+			statusText += `. ${skippedCount} track${skippedCount > 1 ? "s" : ""} skipped (already in playlist or playlist full)`;
 		}
 
 		const content =
 			`**Tracks Added to Playlist**\n\n` +
 			`**${emoji.get("folder")} Playlist:** ${playlist.name}\n` +
 			`**${emoji.get("add")} Action:** Added ${actionText}\n` +
-			`**${emoji.get("check")} Added:** ${addedCount} track${addedCount > 1 ? 's' : ''}\n` +
+			`**${emoji.get("check")} Added:** ${addedCount} track${addedCount > 1 ? "s" : ""}\n` +
 			`**${emoji.get("info")} Total:** ${playlist.track_count}/50 tracks\n` +
-			`${skippedCount > 0 ? `**${emoji.get("cross")} Skipped:** ${skippedCount} track${skippedCount > 1 ? 's' : ''}\n` : ''}` +
+			`${skippedCount > 0 ? `**${emoji.get("cross")} Skipped:** ${skippedCount} track${skippedCount > 1 ? "s" : ""}\n` : ""}` +
 			`\n${statusText}\n\n` +
 			`**${emoji.get("info")} Next Steps:**\n` +
 			`├─ Use \`my-playlists\` to view all playlists\n` +
@@ -392,9 +405,7 @@ class Add2PlaylistCommand extends Command {
 		const container = new ContainerBuilder();
 
 		container.addTextDisplayComponents(
-			new TextDisplayBuilder().setContent(
-				`${emoji.get("cross")} **Error**`,
-			),
+			new TextDisplayBuilder().setContent(`${emoji.get("cross")} **Error**`),
 		);
 
 		container.addSeparatorComponents(
@@ -441,17 +452,28 @@ class Add2PlaylistCommand extends Command {
 
 			if (interaction.customId === "playlist_select") {
 				const playlistId = interaction.values[0];
-				selectedPlaylist = playlists.find(pl => pl.id === playlistId);
+				selectedPlaylist = playlists.find((pl) => pl.id === playlistId);
 
 				if (selectedPlaylist) {
 					await interaction.editReply({
-						components: [this._createAddContainer(playlists, player, selectedPlaylist)],
+						components: [
+							this._createAddContainer(playlists, player, selectedPlaylist),
+						],
 						flags: MessageFlags.IsComponentsV2,
 					});
 				}
-			} else if (interaction.customId === "add_current" || interaction.customId === "add_queue") {
+			} else if (
+				interaction.customId === "add_current" ||
+				interaction.customId === "add_queue"
+			) {
 				if (selectedPlaylist) {
-					await this._processAdd(interaction, userId, player, selectedPlaylist, interaction.customId);
+					await this._processAdd(
+						interaction,
+						userId,
+						player,
+						selectedPlaylist,
+						interaction.customId,
+					);
 				}
 			}
 		});
@@ -464,7 +486,11 @@ class Add2PlaylistCommand extends Command {
 				});
 			} catch (error) {
 				if (error.code !== 10008) {
-					logger.error("Add2PlaylistCommand", "Error updating expired message", error);
+					logger.error(
+						"Add2PlaylistCommand",
+						"Error updating expired message",
+						error,
+					);
 				}
 			}
 		});
@@ -479,7 +505,13 @@ class Add2PlaylistCommand extends Command {
 
 		collector.on("collect", async (interaction) => {
 			await interaction.deferUpdate();
-			await this._processAdd(interaction, userId, player, playlist, interaction.customId);
+			await this._processAdd(
+				interaction,
+				userId,
+				player,
+				playlist,
+				interaction.customId,
+			);
 		});
 
 		collector.on("end", async () => {
@@ -490,7 +522,11 @@ class Add2PlaylistCommand extends Command {
 				});
 			} catch (error) {
 				if (error.code !== 10008) {
-					logger.error("Add2PlaylistCommand", "Error updating expired message", error);
+					logger.error(
+						"Add2PlaylistCommand",
+						"Error updating expired message",
+						error,
+					);
 				}
 			}
 		});
@@ -525,10 +561,17 @@ class Add2PlaylistCommand extends Command {
 				};
 
 				try {
-					playlist = db.playlists.addTrackToPlaylist(playlist.id, userId, trackInfo);
+					playlist = db.playlists.addTrackToPlaylist(
+						playlist.id,
+						userId,
+						trackInfo,
+					);
 					addedCount++;
 				} catch (error) {
-					if (error.message.includes('already exists') || error.message.includes('limit reached')) {
+					if (
+						error.message.includes("already exists") ||
+						error.message.includes("limit reached")
+					) {
 						skippedCount++;
 					} else {
 						throw error;
@@ -537,14 +580,24 @@ class Add2PlaylistCommand extends Command {
 			}
 
 			await interaction.editReply({
-				components: [this._createSuccessContainer(playlist, addedCount, skippedCount, action.replace('add_', ''))],
+				components: [
+					this._createSuccessContainer(
+						playlist,
+						addedCount,
+						skippedCount,
+						action.replace("add_", ""),
+					),
+				],
 				flags: MessageFlags.IsComponentsV2,
 			});
-
 		} catch (error) {
 			logger.error("Add2PlaylistCommand", "Error processing add", error);
 			await interaction.editReply({
-				components: [this._createErrorContainer("Failed to add tracks to playlist. Please try again.")],
+				components: [
+					this._createErrorContainer(
+						"Failed to add tracks to playlist. Please try again.",
+					),
+				],
 				flags: MessageFlags.IsComponentsV2,
 			});
 		}

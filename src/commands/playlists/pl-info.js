@@ -240,7 +240,6 @@ class PlaylistInfoCommand extends Command {
 				),
 		);
 
-		// Remove Tracks Menu
 		if (pageTracks.length > 0) {
 			const removeMenu = new StringSelectMenuBuilder()
 				.setCustomId(`plinfo_remove_tracks_${playlist.id}`)
@@ -251,7 +250,7 @@ class PlaylistInfoCommand extends Command {
 					pageTracks.map((track, index) => ({
 						label: track.title.substring(0, 100),
 						description: `by ${track.author || "Unknown"}`.substring(0, 100),
-						value: track.identifier, // Use unique identifier for removal
+						value: track.identifier,
 					})),
 				);
 			container.addActionRowComponents(
@@ -259,7 +258,6 @@ class PlaylistInfoCommand extends Command {
 			);
 		}
 
-		// Navigation Buttons
 		const navButtons = new ActionRowBuilder().addComponents(
 			new ButtonBuilder()
 				.setCustomId(`plinfo_tracks_prev_${playlist.id}_${page}`)
@@ -363,10 +361,8 @@ class PlaylistInfoCommand extends Command {
 						}
 					}
 
-					// Refetch playlist data to reflect changes
 					currentPlaylist = db.playlists.getPlaylist(currentPlaylist.id);
 
-					// Adjust current page if it's now out of bounds
 					const totalPages =
 						Math.ceil(currentPlaylist.tracks.length / TRACKS_PER_PAGE) || 1;
 					if (currentPage > totalPages) currentPage = totalPages;
@@ -387,10 +383,12 @@ class PlaylistInfoCommand extends Command {
 
 		collector.on("end", async () => {
 			try {
-				await message.edit({ components: [this._createExpiredContainer()] });
+				await message.edit({
+					components: [this._createExpiredContainer()],
+					flags: MessageFlags.IsComponentsV2,
+				});
 			} catch (error) {
 				if (error.code !== 10008) {
-					// Ignore "Unknown Message"
 					logger.error(
 						"PlaylistInfo",
 						"Failed to edit message on collector end",
@@ -425,11 +423,15 @@ class PlaylistInfoCommand extends Command {
 			)
 			.addSeparatorComponents(new SeparatorBuilder())
 			.addSectionComponents(
-				new SectionBuilder().addTextDisplayComponents(
-					new TextDisplayBuilder().setContent(
-						`You don't have any custom playlists yet.\n\nUse \`/create-playlist <name>\` to get started!`,
+				new SectionBuilder()
+					.setThumbnailAccessory(
+						new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
+					)
+					.addTextDisplayComponents(
+						new TextDisplayBuilder().setContent(
+							`You don't have any custom playlists yet.\n\nUse \`/create-playlist <name>\` to get started!`,
+						),
 					),
-				),
 			);
 	}
 
@@ -448,9 +450,11 @@ class PlaylistInfoCommand extends Command {
 			`├─ Try using the playlist's ID.\n` +
 			`└─ Use \`/my-playlists\` to see a list of your playlists.`;
 		container.addSectionComponents(
-			new SectionBuilder().addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(content),
-			),
+			new SectionBuilder()
+				.setThumbnailAccessory(
+					new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
+				)
+				.addTextDisplayComponents(new TextDisplayBuilder().setContent(content)),
 		);
 		return container;
 	}
@@ -465,9 +469,11 @@ class PlaylistInfoCommand extends Command {
 		container.addSeparatorComponents(new SeparatorBuilder());
 		const content = `This interactive menu has expired.\nPlease run the command again.`;
 		container.addSectionComponents(
-			new SectionBuilder().addTextDisplayComponents(
-				new TextDisplayBuilder().setContent(content),
-			),
+			new SectionBuilder()
+				.setThumbnailAccessory(
+					new ThumbnailBuilder().setURL(config.assets.defaultThumbnail),
+				)
+				.addTextDisplayComponents(new TextDisplayBuilder().setContent(content)),
 		);
 		return container;
 	}

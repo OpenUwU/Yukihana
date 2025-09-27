@@ -4,7 +4,7 @@ import { config } from "#config/config";
 import { PlayerManager } from "#managers/PlayerManager";
 import { EventUtils } from "#utils/EventUtils";
 
-const LASTFM_API_KEY = "91a37ab5999def738d2af6ef813bf1eb";
+const LASTFM_API_KEY = config.lastfm.apiKey
 const LASTFM_BASE_URL = "http://ws.audioscrobbler.com/2.0/";
 
 export default {

@@ -73,12 +73,15 @@ class SearchCommand extends Command {
 
   async _handleSearch(client, context, query, initialSource) {
     const userId = context.user?.id || context.author?.id;
-    const guildId   =context.guild.id;
+    const guildId = context.guild.id;
 
-    const loadingMessage   =await this._reply(context, this._createLoadingContainer(query));
+    const loadingMessage = await this._reply(context, this._createLoadingContainer(query));
+    if (!loadingMessage) {
+      return this._reply(context, this._createErrorContainer("Failed to send message."));
+    }
 
     try {
-      const searchData   ={
+      const searchData = {
         query,
         selectedSource: initialSource,
         currentResults: null,
@@ -86,11 +89,11 @@ class SearchCommand extends Command {
         userId
       };
 
-      const results   =await this._searchTracks(client, query, initialSource);
-      searchData.currentResults   =results;
+      const results = await this._searchTracks(client, query, initialSource);
+      searchData.currentResults = results;
 
-      const container   =this._createSearchContainer(searchData);
-      const message   =await this._editReply(loadingMessage, container);
+      const container = this._createSearchContainer(searchData);
+      const message = await this._editReply(loadingMessage, container);
 
       if (message) {
         this._setupSearchCollector(message, client, userId, guildId, searchData);
@@ -106,15 +109,15 @@ class SearchCommand extends Command {
 
   async _searchTracks(client, query, source) {
     try {
-      if (source   ==='all') {
-        const sources   =['spsearch', 'ytsearch', 'amsearch', 'scsearch'];
-        const results   =[];
+      if (source === 'all') {
+        const sources = ['spsearch', 'ytsearch', 'amsearch', 'scsearch'];
+        const results = [];
 
         for (const src of sources) {
           try {
-            const searchResult   =await client.music.search(query, { source: src });
+            const searchResult = await client.music.search(query, { source: src });
             if (searchResult?.tracks?.length > 0) {
-              const tracks   =searchResult.tracks.slice(0, 2).map(track   => ({
+              const tracks = searchResult.tracks.slice(0, 2).map(track => ({
                 ...track,
                 source: this._getSourceName(src),
                 sourceKey: src
@@ -126,14 +129,14 @@ class SearchCommand extends Command {
           }
         }
 
-        const uniqueResults   =this._removeDuplicateTracks(results);
+        const uniqueResults = this._removeDuplicateTracks(results);
         return uniqueResults.slice(0, MAX_RESULTS);
       } else {
-        const sourceKey   =this._normalizeSource(source);
-        const searchResult   =await client.music.search(query, { source: sourceKey });
+        const sourceKey = this._normalizeSource(source);
+        const searchResult = await client.music.search(query, { source: sourceKey });
 
         if (searchResult?.tracks?.length > 0) {
-          return searchResult.tracks.slice(0, MAX_RESULTS).map(track   => ({
+          return searchResult.tracks.slice(0, MAX_RESULTS).map(track => ({
             ...track,
             source: this._getSourceName(sourceKey),
             sourceKey: sourceKey
@@ -148,9 +151,9 @@ class SearchCommand extends Command {
   }
 
   _createSearchContainer(searchData) {
-    const { query, selectedSource, currentResults, guildId, userId }   =searchData;
-    const container   =new ContainerBuilder();
-    const premiumStatus   =this._getPremiumStatus(guildId, userId);
+    const { query, selectedSource, currentResults, guildId, userId } = searchData;
+    const container = new ContainerBuilder();
+    const premiumStatus = this._getPremiumStatus(guildId, userId);
 
     container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(`### Music Search Results`)
@@ -158,8 +161,8 @@ class SearchCommand extends Command {
 
     container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
-    const resultsCount   =currentResults?.length || 0;
-    const sourceText   =this._getSourceName(this._normalizeSource(selectedSource));
+    const resultsCount = currentResults?.length || 0;
+    const sourceText = this._getSourceName(this._normalizeSource(selectedSource));
 
     container.addSectionComponents(
       new SectionBuilder()
@@ -174,7 +177,7 @@ class SearchCommand extends Command {
     if (currentResults && currentResults.length > 0) {
       container.addSeparatorComponents(new SeparatorBuilder().setSpacing(SeparatorSpacingSize.Small));
 
-      currentResults.forEach((track, index)   => {
+      currentResults.forEach((track, index) => {
         container.addSectionComponents(
           new SectionBuilder()
             .addTextDisplayComponents(
@@ -220,55 +223,55 @@ class SearchCommand extends Command {
             label: 'Spotify',
             description: 'Search Spotify for tracks',
             value: 'sp',
-            default: selectedSource   ==='sp'
+            default: selectedSource === 'sp'
           },
           {
             label: 'YouTube',
             description: 'Search YouTube for tracks',
             value: 'yt',
-            default: selectedSource   ==='yt'
+            default: selectedSource === 'yt'
           },
           {
             label: 'Apple Music',
             description: 'Search Apple Music for tracks',
             value: 'am',
-            default: selectedSource   ==='am'
+            default: selectedSource === 'am'
           },
           {
             label: 'SoundCloud',
             description: 'Search SoundCloud for tracks',
             value: 'sc',
-            default: selectedSource   ==='sc'
+            default: selectedSource === 'sc'
           },
           {
             label: 'Deezer',
             description: 'Search Deezer for tracks',
             value: 'dz',
-            default: selectedSource   ==='dz'
+            default: selectedSource === 'dz'
           },
           {
             label: 'All Sources',
             description: 'Search all available sources',
             value: 'all',
-            default: selectedSource   ==='all'
+            default: selectedSource === 'all'
           }
         ])
     );
   }
 
   _createResultSelector(results, guildId, userId) {
-    const premiumStatus   =this._getPremiumStatus(guildId, userId);
-    const maxSelections   =Math.min(results.length, 6, premiumStatus.maxSongs);
+    const premiumStatus = this._getPremiumStatus(guildId, userId);
+    const maxSelections = Math.min(results.length, 6, premiumStatus.maxSongs);
 
-    const menu   =new StringSelectMenuBuilder()
+    const menu = new StringSelectMenuBuilder()
       .setCustomId(`search_result_select_${guildId}`)
       .setPlaceholder(`Select up to ${maxSelections} tracks to add to queue`)
       .setMinValues(1)
       .setMaxValues(maxSelections);
 
-    results.forEach((track, index)   => {
-      const title   =track.info.title.length > 90 ? track.info.title.substring(0, 87) + '...' : track.info.title;
-      const author   =(track.info.author || 'Unknown').length > 30 ? (track.info.author || 'Unknown').substring(0, 27) + '...' : (track.info.author || 'Unknown');
+    results.forEach((track, index) => {
+      const title = track.info.title.length > 90 ? track.info.title.substring(0, 87) + '...' : track.info.title;
+      const author = (track.info.author || 'Unknown').length > 30 ? (track.info.author || 'Unknown').substring(0, 27) + '...' : (track.info.author || 'Unknown');
 
       menu.addOptions({
         label: title,
@@ -281,51 +284,57 @@ class SearchCommand extends Command {
   }
 
   _setupSearchCollector(message, client, userId, guildId, searchData) {
-    const filter   =(i)   => {
-      return i.user.id   ===userId && (
-        i.customId   ==='search_source_select' ||
-        i.customId   ===`search_result_select_${guildId}`
+    const filter = (i) => {
+      return i.user.id === userId && (
+        i.customId === 'search_source_select' ||
+        i.customId === `search_result_select_${guildId}`
       );
     };
 
-    const collector   =message.createMessageComponentCollector({
+    const collector = message.createMessageComponentCollector({
       filter,
-      time: 10000,
-      max: 10
+      time: 300000,
+      max: 50
     });
 
-    collector.on('collect', async (interaction)   => {
+    collector.on('collect', async (interaction) => {
       try {
-        logger.debug('SearchCommand', `Collector triggered: ${interaction.customId} by ${interaction.user.id}`);
-
-        await interaction.deferReply();
-
-        if (interaction.customId   ==='search_source_select') {
-          await this._handleSourceSelect(interaction, client, searchData,message);
-        } else if (interaction.customId   ===`search_result_select_${guildId}`) {
-          await this._handleResultSelect(interaction, client, guildId, searchData,message);
+        if (interaction.customId === 'search_source_select') {
+          await this._handleSourceSelect(interaction, client, searchData, message);
+        } else if (interaction.customId === `search_result_select_${guildId}`) {
+          await this._handleResultSelect(interaction, client, guildId, searchData, message);
         }
-
       } catch (error) {
         logger.error('SearchCommand', 'Error in collector', error);
-        try {
-          await interaction.followUp({
-            content: 'An error occurred while processing your request.',
-            ephemeral: true
-          });
-        } catch (followUpError) {
-          logger.error('SearchCommand', 'Error sending followUp', followUpError);
+        if (!interaction.replied && !interaction.deferred) {
+          try {
+            await interaction.reply({
+              content: 'An error occurred while processing your request.',
+              ephemeral: true
+            });
+          } catch (err) {
+            logger.error('SearchCommand', 'Error sending error reply', err);
+          }
+        } else if (interaction.deferred) {
+          try {
+            await interaction.editReply({
+              content: 'An error occurred while processing your request.'
+            });
+          } catch (err) {
+            logger.error('SearchCommand', 'Error editing deferred reply', err);
+          }
         }
       }
-    })
-    collector.on('end', async (collected, reason)   => {
+    });
+
+    collector.on('end', async (collected, reason) => {
       logger.debug('SearchCommand', `Collector ended: ${reason}, collected: ${collected.size}`);
 
       try {
-        const currentMessage   =await message.fetch().catch(()   => null);
-        if (!currentMessage || currentMessage.components.length   ===0) return;
+        const currentMessage = await message.fetch().catch(() => null);
+        if (!currentMessage || !currentMessage.components || currentMessage.components.length === 0) return;
 
-        const newContainer   =this._createDisabledContainer(searchData);
+        const newContainer = this._createDisabledContainer(searchData);
         await currentMessage.edit({
           components: [newContainer],
           flags: MessageFlags.IsComponentsV2
@@ -337,16 +346,14 @@ class SearchCommand extends Command {
   }
 
   _createDisabledContainer(searchData) {
-    const container   =this._createSearchContainer(searchData);
+    const container = this._createSearchContainer(searchData);
 
     if (container.components) {
-      container.components.forEach(component   => {
-        if (component.type   ===1) {
-          component.components.forEach(child   => {
-            if (child.type   ===3) {
-              child.data.disabled   =true;
-            } else if (child.type   ===2) {
-              child.data.disabled   =true;
+      container.components.forEach(component => {
+        if (component.type === 1) {
+          component.components.forEach(child => {
+            if (child.type === 3 || child.type === 2) {
+              child.data.disabled = true;
             }
           });
         }
@@ -356,23 +363,26 @@ class SearchCommand extends Command {
     return container;
   }
 
-  async _handleSourceSelect(interaction, client, searchData) {
-    const selectedSource   =interaction.values[0];
-    logger.debug('SearchCommand', `Source selected: ${selectedSource}`);
+  async _handleSourceSelect(interaction, client, searchData, message) {
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferUpdate();
+    }
 
-    searchData.selectedSource   =selectedSource;
+    const selectedSource = interaction.values[0];
+    searchData.selectedSource = selectedSource;
 
     try {
-      const results   =await this._searchTracks(client, searchData.query, selectedSource);
-      searchData.currentResults   =results;
+      const results = await this._searchTracks(client, searchData.query, selectedSource);
+      searchData.currentResults = results;
 
+      const container = this._createSearchContainer(searchData);
       await interaction.editReply({
-        components: [this._createSearchContainer(searchData)],
+        components: [container],
         flags: MessageFlags.IsComponentsV2
       });
     } catch (error) {
       logger.error('SearchCommand', 'Error searching with new source', error);
-      searchData.currentResults   =[];
+      searchData.currentResults = [];
       await interaction.editReply({
         components: [this._createSearchContainer(searchData)],
         flags: MessageFlags.IsComponentsV2
@@ -380,21 +390,22 @@ class SearchCommand extends Command {
     }
   }
 
-  async _handleResultSelect(interaction, client, guildId, searchData,message) {
-    const selectedIndices   =interaction.values.map(v   => parseInt(v, 10));
-    const { currentResults }   =searchData;
+  async _handleResultSelect(interaction, client, guildId, searchData, message) {
+    if (!interaction.deferred && !interaction.replied) {
+      await interaction.deferReply();
+    }
 
-    logger.debug('SearchCommand', `Results selected: ${selectedIndices} from ${currentResults?.length} total`);
+    const selectedIndices = interaction.values.map(v => parseInt(v, 10));
+    const { currentResults } = searchData;
 
-    if (!currentResults || selectedIndices.some(i   => i >= currentResults.length || i < 0)) {
-      await interaction.followUp({
-        content: 'Invalid selection. Please try again.',
-        ephemeral: true
+    if (!currentResults || selectedIndices.some(i => i >= currentResults.length || i < 0)) {
+      await interaction.editReply({
+        content: 'Invalid selection. Please try again.'
       });
       return;
     }
 
-    const voiceChannel   =interaction.member?.voice?.channel;
+    const voiceChannel = interaction.member?.voice?.channel;
     if (!voiceChannel) {
       await interaction.editReply({
         components: [this._createErrorContainer("You need to join a voice channel to add music to queue.")],
@@ -403,7 +414,7 @@ class SearchCommand extends Command {
       return;
     }
 
-    const permissions   =voiceChannel.permissionsFor(interaction.guild.members.me);
+    const permissions = voiceChannel.permissionsFor(interaction.guild.members.me);
     if (!permissions.has(['Connect', 'Speak'])) {
       await interaction.editReply({
         components: [this._createErrorContainer("I need permission to join and speak in your voice channel.")],
@@ -416,34 +427,40 @@ class SearchCommand extends Command {
       components: [this._createProcessingContainer(selectedIndices.length)],
       flags: MessageFlags.IsComponentsV2
     });
- await message.delete()
+
+    try {
+      await message.delete();
+    } catch (error) {
+      logger.warn('SearchCommand', 'Could not delete original message', error);
+    }
+
     await this._addTracksToQueue(interaction, client, guildId, currentResults, selectedIndices);
   }
 
   async _addTracksToQueue(interaction, client, guildId, tracks, selectedIndices) {
     try {
-      const voiceChannel   =interaction.member.voice.channel;
-      const userId   =interaction.user.id;
+      const voiceChannel = interaction.member.voice.channel;
+      const userId = interaction.user.id;
 
-      let player   =client.music?.getPlayer(guildId);
+      let player = client.music?.getPlayer(guildId);
       if (!player) {
-        player   =await client.music.createPlayer({
+        player = await client.music.createPlayer({
           guildId: guildId,
           textChannelId: interaction.channel.id,
           voiceChannelId: voiceChannel.id
         });
       }
 
-      const pm   =new PlayerManager(player);
+      const pm = new PlayerManager(player);
 
       if (!pm.isConnected) {
         await pm.connect();
       }
 
-      const currentQueueSize   =pm.queue.tracks.length;
-      const selectedCount   =selectedIndices.length;
+      const currentQueueSize = pm.queue.tracks.length;
+      const selectedCount = selectedIndices.length;
 
-      const queueLimitCheck   =this._checkQueueLimit(currentQueueSize, selectedCount, guildId, userId);
+      const queueLimitCheck = this._checkQueueLimit(currentQueueSize, selectedCount, guildId, userId);
 
       if (!queueLimitCheck.allowed) {
         await interaction.editReply({
@@ -453,11 +470,11 @@ class SearchCommand extends Command {
         return;
       }
 
-      const wasEmpty   =pm.queue.tracks.length   ===0 && !pm.isPlaying;
-      const selectedTracks   =selectedIndices.map(i   => tracks[i]);
-      const tracksToAdd   =queueLimitCheck.canAddAll ? selectedTracks : selectedTracks.slice(0, queueLimitCheck.tracksToAdd);
+      const wasEmpty = pm.queue.tracks.length === 0 && !pm.isPlaying;
+      const selectedTracks = selectedIndices.map(i => tracks[i]);
+      const tracksToAdd = queueLimitCheck.canAddAll ? selectedTracks : selectedTracks.slice(0, queueLimitCheck.tracksToAdd);
 
-      const addedTracks   =[];
+      const addedTracks = [];
       for (const track of tracksToAdd) {
         try {
           await pm.addTracks(track);
@@ -534,8 +551,8 @@ class SearchCommand extends Command {
     return container;
   }
 
-  _createErrorContainer(message, isPremiumLimit   =false) {
-    const container   =new ContainerBuilder();
+  _createErrorContainer(message, isPremiumLimit = false) {
+    const container = new ContainerBuilder();
 
     container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent(`### ${isPremiumLimit ? 'Queue Limit Reached' : 'Search Error'}`)
@@ -556,7 +573,7 @@ class SearchCommand extends Command {
   }
 
   _createProcessingContainer(count) {
-    const container   =new ContainerBuilder();
+    const container = new ContainerBuilder();
 
     container.addTextDisplayComponents(
       new TextDisplayBuilder().setContent("### Processing Selection")
@@ -578,7 +595,7 @@ class SearchCommand extends Command {
   }
 
   _createSuccessContainer(title, description) {
-    const container   =new ContainerBuilder();
+    const container = new ContainerBuilder();
 
     container.addTextDisplayComponents(new TextDisplayBuilder().setContent(`### ${title}`));
 
@@ -596,19 +613,19 @@ class SearchCommand extends Command {
   }
 
   _checkQueueLimit(currentQueueSize, tracksToAdd, guildId, userId) {
-    const premiumStatus   =this._getPremiumStatus(guildId, userId);
-    const availableSlots   =premiumStatus.maxSongs - currentQueueSize;
+    const premiumStatus = this._getPremiumStatus(guildId, userId);
+    const availableSlots = premiumStatus.maxSongs - currentQueueSize;
 
     if (availableSlots <= 0) {
-      const limitMessage   =premiumStatus.hasPremium
+      const limitMessage = premiumStatus.hasPremium
         ? `Premium queue is full! You can have up to **${premiumStatus.maxSongs}** songs in queue.`
         : `Free tier queue is full! You can have up to **${premiumStatus.maxSongs}** songs in queue.\n*Upgrade to premium for up to **${config.queue.maxSongs.premium}** songs!*`;
 
       return { allowed: false, message: limitMessage };
     }
 
-    const canAddAll   =tracksToAdd <= availableSlots;
-    const tracksToAddActual   =canAddAll ? tracksToAdd : availableSlots;
+    const canAddAll = tracksToAdd <= availableSlots;
+    const tracksToAddActual = canAddAll ? tracksToAdd : availableSlots;
 
     return {
       allowed: true,
@@ -620,7 +637,7 @@ class SearchCommand extends Command {
   }
 
   _getPremiumStatus(guildId, userId) {
-    const premiumStatus   =db.hasAnyPremium(userId, guildId);
+    const premiumStatus = db.hasAnyPremium(userId, guildId);
     return {
       hasPremium: !!premiumStatus,
       type: premiumStatus ? premiumStatus.type : 'free',
@@ -629,9 +646,9 @@ class SearchCommand extends Command {
   }
 
   _removeDuplicateTracks(tracks) {
-    const seen   =new Set();
-    return tracks.filter(track   => {
-      const key   =`${track.info.title.toLowerCase()}_${track.info.author?.toLowerCase()}`;
+    const seen = new Set();
+    return tracks.filter(track => {
+      const key = `${track.info.title.toLowerCase()}_${track.info.author?.toLowerCase()}`;
       if (seen.has(key)) return false;
       seen.add(key);
       return true;
@@ -639,7 +656,7 @@ class SearchCommand extends Command {
   }
 
   _getSourceName(source) {
-    const sourceNames   ={
+    const sourceNames = {
       'ytsearch': 'YouTube',
       'spsearch': 'Spotify',
       'amsearch': 'Apple Music',
@@ -656,7 +673,7 @@ class SearchCommand extends Command {
   }
 
   _normalizeSource(source) {
-    const sourceMap   ={
+    const sourceMap = {
       yt: "ytsearch", youtube: "ytsearch",
       sp: "spsearch", spotify: "spsearch",
       am: "amsearch", apple: "amsearch",
@@ -668,11 +685,11 @@ class SearchCommand extends Command {
   }
 
   _parseFlags(args) {
-    const flags   ={ query: [], source: null };
-    for (let i   =0; i < args.length; i++) {
-      const arg   =args[i];
-      if (arg   ==="--src" || arg   ==="--source") {
-        if (i + 1 < args.length) flags.source   =args[++i];
+    const flags = { query: [], source: null };
+    for (let i = 0; i < args.length; i++) {
+      const arg = args[i];
+      if (arg === "--src" || arg === "--source") {
+        if (i + 1 < args.length) flags.source = args[++i];
       } else if (!arg.startsWith("--")) {
         flags.query.push(arg);
       }
@@ -682,15 +699,15 @@ class SearchCommand extends Command {
 
   _formatDuration(ms) {
     if (!ms || ms < 0) return "Live";
-    const seconds   =Math.floor((ms / 1000) % 60).toString().padStart(2, "0");
-    const minutes   =Math.floor((ms / (1000 * 60)) % 60).toString().padStart(2, "0");
-    const hours   =Math.floor(ms / (1000 * 60 * 60));
+    const seconds = Math.floor((ms / 1000) % 60).toString().padStart(2, "0");
+    const minutes = Math.floor((ms / (1000 * 60)) % 60).toString().padStart(2, "0");
+    const hours = Math.floor(ms / (1000 * 60 * 60));
     if (hours > 0) return `${hours}:${minutes}:${seconds}`;
     return `${minutes}:${seconds}`;
   }
 
   async _reply(context, container) {
-    const payload   ={
+    const payload = {
       components: [container],
       flags: MessageFlags.IsComponentsV2,
       fetchReply: true
@@ -699,7 +716,7 @@ class SearchCommand extends Command {
     try {
       if (context.replied || context.deferred) {
         return await context.editReply(payload);
-      } else if (typeof context.reply   ==='function') {
+      } else if (typeof context.reply === 'function') {
         return await context.reply(payload);
       } else {
         return await context.channel.send(payload);
@@ -712,6 +729,7 @@ class SearchCommand extends Command {
 
   async _editReply(message, container) {
     try {
+      if (!message) return null;
       return await message.edit({
         components: [container],
         flags: MessageFlags.IsComponentsV2

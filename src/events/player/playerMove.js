@@ -6,7 +6,7 @@ export default {
 	once: false,
 	async execute(player, oldChannelId, newChannelId) {
 		logger.info(
-			"LavalinkPlayer",
+			"LavalinkPlayerMoved",
 			`🚚 Player moved: ${oldChannelId} → ${newChannelId}`,
 		);
 	},

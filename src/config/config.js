@@ -10,7 +10,7 @@ export const config = {
     {
       id: "main-node",
       host: process.env.lavahost,
-      port: 7023,
+      port: 2002,
       authorization: process.env.passlink,
       secure: false,
       retryAmount: 5,
@@ -81,6 +81,9 @@ export const config = {
   spotify: {
     clientId: process.env.SPOTIFY_CLIENT_ID || "321c535c35b4423a945c9a6df5c5be06",
     clientSecret: process.env.SPOTIFY_CLIENT_SECRET || "1bc3fee6cfd743be843ef29047bfe46d"
+  },
+  lastfm:{
+    apiKey: process.env.LASTFM_API_KEY || "91a37ab5999def738d2af6ef813bf1eb",
   },
   search: {
     maxResults: 6,

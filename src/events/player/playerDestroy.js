@@ -11,7 +11,7 @@ export default {
 				`🎵 Player destroyed for guild: ${player.guildId},reason : ${reason}`,
 			);
 		} catch (error) {
-			logger.error("TrackStuck", "Error in trackStuck event:", error);
+			logger.error("PlayerDestroy", "Error in Pla event:", error);
 		}
 	},
 };

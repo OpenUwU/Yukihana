@@ -11,7 +11,7 @@ export default {
 				`🎵 Player created for guild: ${player.guildId}`,
 			);
 		} catch (error) {
-			logger.error("TrackStuck", "Error in trackStuck event:", error);
+			logger.error("PlayerCreate", "Error in playerCreate event:", error);
 		}
 	},
 };

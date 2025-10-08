@@ -2,11 +2,5 @@
 the handler is undergoing complete rewrite so the bot maybe broken rn 
 you can use it as reference but it is not recommended to use it in production rn 
 wait for further updates (my schedule is rcked up rn so updates will be slow)
-### Todo
-
-- [x] Handler fix
-- [x] Centralised events
-- [ ] Fix managers
-- [ ] Fix database
-- [ ] Fix 24/7 autoplay
-- [ ] Fix Lavalink events
+## also you are not allowed to host a public instance without prior permission 
+and dont even try to touch the credits 

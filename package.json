@@ -30,7 +30,7 @@
     "modular",
     "yukihana"
   ],
-  "author": "Muffin STUDIO - Bre4d777",
+  "author": "Bre4d777",
   "license": "MIT",
   "dependencies": {
     "@napi-rs/canvas": "^0.1.74",

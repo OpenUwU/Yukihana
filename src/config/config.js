@@ -11,6 +11,11 @@ export const config = {
   // Command prefix for text-based commands (default: '.')
   prefix: process.env.PREFIX || '.',
   
+   commands: {
+      slash:  true,  // Enable/disable slash commands
+      prefix: true, // Enable/disable prefix commands
+    },
+  
   // Array of Discord user IDs with owner privileges
   // Multiple IDs should be comma-separated in .env file
   ownerIds: (process.env.OWNER_IDS || '').split(',').map(id => id.trim()).filter(Boolean),

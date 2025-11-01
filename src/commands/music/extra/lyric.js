@@ -102,7 +102,7 @@ class LyricsCommand extends Command {
 		try {
 			const player = client.music.getPlayer(interaction.guild.id);
 
-			if (!player || !player.current) {
+			if (!player || !player.queue.current) {
 				return interaction.reply({
 					components: [
 						this._createErrorContainer("No song is currently playing."),

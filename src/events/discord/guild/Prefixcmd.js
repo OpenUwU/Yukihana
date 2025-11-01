@@ -292,7 +292,8 @@ export default {
 
     await _handleExpiredGuildPerks(message.guild.id, message.channel);
     await _handleExpiredUserPerks(message.author.id, message.author);
-
+    
+    if (!client.config.commands.prefix) return;
     if (
       db.isUserBlacklisted(message.author.id) ||
       db.isGuildBlacklisted(message.guild.id)

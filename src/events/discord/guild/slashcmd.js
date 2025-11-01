@@ -392,6 +392,15 @@ async function handleAutocomplete(interaction, client) {
 export default {
   name: "interactionCreate",
   async execute(interaction, client) {
+    if (!client.config.commands.slash) {
+    if (interaction.type === InteractionType.ApplicationCommand) {
+      return interaction.reply({
+        content: "Slash commands are currently disabled.",
+        ephemeral: true
+      });
+    }
+    return;
+    }
     if (interaction.type === InteractionType.ApplicationCommand) {
       await handleChatInputCommand(interaction, client);
     } else if (

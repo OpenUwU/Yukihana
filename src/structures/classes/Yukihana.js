@@ -26,14 +26,15 @@ try {
 export class Yukihana extends Client {
 	constructor() {
 		const clientOptions = {
-			intents: [
-				GatewayIntentBits.Guilds,
-				GatewayIntentBits.GuildMembers,
-				GatewayIntentBits.GuildMessages,
-				GatewayIntentBits.GuildVoiceStates,
-				GatewayIntentBits.GuildMessageReactions,
-				GatewayIntentBits.MessageContent,
-			],
+			   intents: [
+         GatewayIntentBits.Guilds,
+         GatewayIntentBits.GuildMembers,
+         GatewayIntentBits.GuildVoiceStates,
+        ...(config.commands.prefix ? [
+         GatewayIntentBits.GuildMessages,
+         GatewayIntentBits.MessageContent,
+         ] : []),
+         ],
 			partials: [
 				Partials.Channel,
 				Partials.GuildMember,
